@@ -1,0 +1,1 @@
+{"name": "DSRCoin", "address": "0x51bb7917efcad03ec8b1d37251a06cd56b0c4a72", "block_number": 14402692, "data": "[['name', 'string', 'DSR Coin', 32], ['symbol', 'string', 'DSR', 32], ['decimals', 'uint8', 8, 1], ['totalSupply', 'uint256', 3400000000000, 32], ['owner', 'address', '0x000000000000000000000000b2b4076a36b8993094cbfdb72512820b8bedb6ce', 20]]"}

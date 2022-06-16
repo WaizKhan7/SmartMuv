@@ -1,0 +1,10 @@
+.idea
+__pycache__
+build
+jj.json
+parsed.json
+temp
+transactions
+Outputs
+.env
+.flaskenv
