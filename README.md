@@ -10,7 +10,7 @@
 ## Clone the project
 
 ```
-git clone https://github.com/Smartmuv.git
+git clone https://github.com/WaizKhan7/SmartMuv.git
 ```
 
 ## Installing Dependencies
