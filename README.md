@@ -71,10 +71,10 @@ Select the smart contract from the provided list, and SmartMuv will extract and 
 ## Bugs Detection
 
 ```
-python3 -m tests.ast_parsing_test
-python3 -m tests.slot_analysis_test
-python3 -m tests.key_approx_analysis_test
-python3 -m tests.state_extraction_test
+python3 -m tests.test_ast_parsing
+python3 -m tests.test_slot_analysis
+python3 -m tests.test_key_approx_analysis
+python3 -m tests.test_state_extraction
 ```
 
 ## Features and Uses
