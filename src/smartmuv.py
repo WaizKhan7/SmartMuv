@@ -18,7 +18,7 @@ if __name__ == "__main__":
         contracts = json.load(f)
     for index in range(len(contracts)):
         print(index+1, " ", contracts[index]['Address'], " ", contracts[index]['Contract Name'])
-    num = input("Select contract no from above to run Transper -> ")
+    num = input("Select contract no from above to run SmartMuv -> ")
     contract_name = contracts[int(num)-1]['Contract Name']
     addr = contracts[int(num)-1]['Address']
     source_code = read_source_code(contract_name, input_dir)
