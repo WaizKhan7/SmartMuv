@@ -69,7 +69,28 @@ def upgrade_contract(cont_name, old_source_code, new_source_code, cont_state):
     all_contracts_old = get_all_variables(source_unit_old, all_contracts_old, is_new_contract=False)
     source_unit_new = sol_parser.parse(new_source_code) 
     all_contracts_new = get_all_variables(source_unit_new, all_contracts_old, is_new_contract=True)
-    
+    intialized_new_code = str(new_source_code).split('\n')
+    cont_found = False
+    cont_ind = 0
+    constructor_ind = 0
+    for line_num in range(0,len(intialized_new_code)):
+        code_line = intialized_new_code[line_num]
+        if 'contract ' + cont_name in code_line:
+            cont_found = True
+            cont_ind = line_num
+            break
+    for var in all_contracts_new[cont_name]['vars']:
+        tmp = var['name'] 
+        for line_num in range(cont_ind, len(intialized_new_code)):
+            code_line = intialized_new_code[line_num]        
+            if(('constructor()' in code_line or 'function ' + cont_name + '(' in code_line or 'constructor (' in code_line) and cont_found):
+                constructor_ind = line_num
+                break       
+        for index in range(constructor_ind-1, len(intialized_new_code)):
+            code_line = intialized_new_code[index] 
+            if tmp + ' = ' in code_line:
+                all_contracts_new[cont_name]['vars'].remove(var)
+
     state_lst = []
     for var_new in all_contracts_new[cont_name]['vars']:
         var_new_name = var_new['name']
@@ -89,14 +110,13 @@ def upgrade_contract(cont_name, old_source_code, new_source_code, cont_state):
                 else:
                     state_lst.append(var_new_name + '=' + str(line_num[2]) + ';\n')
 
-    intialized_new_code = str(new_source_code).split('\n')
-    new_contract_source_code = False
+    contract_found = False
     contructor_found = False
     for line_num in range(0, len(intialized_new_code)):
         definition = intialized_new_code[line_num]
         if 'contract ' + cont_name in definition:
-            new_contract_source_code = True
-        if ('constructor()' in definition or 'function ' + cont_name + '(' in definition) and new_contract_source_code:
+            contract_found = True
+        if ('constructor()' in definition or 'function ' + cont_name + '(' in definition) and contract_found:
             contructor_found = True
             break
     if contructor_found:
