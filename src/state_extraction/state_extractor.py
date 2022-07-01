@@ -11,7 +11,16 @@ from src.ast_parsing.ast_parser import generate_ast
 from web3.auto import Web3
 from configparser import ConfigParser
 import copy
+import json
 warnings.filterwarnings("ignore")
+
+
+def get_final_results(results):
+    final_results = []
+    for res in results:
+        if res[-2] != 0:
+            final_results.append(res)
+    return final_results
 
 def generate_readable_results(results, w3):
     for var in results:
@@ -262,7 +271,7 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                 keys_detail_list = contract.decode_function_input(tran['input'])
             except:
                 continue
-            c = c+1
+            c = c + 1
             if keys_detail_list[0].fn_name == fun[0]:
                 # input types of a function
                 tabi = keys_detail_list[0].abi['inputs']
@@ -289,6 +298,7 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                     possible_keys.append(tmp_lst)
     map_slots = []
     for item in possible_keys:
+        #sub contains key and key type respectively
         for sub in item:
             placeholder = []
             for lev in range(0, level):
@@ -297,16 +307,21 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                         [w3.toInt(hexstr=sub[lev][0]), sub[lev][0]])
 
         slot = var['slot']
+        keyss = []
+        #placeholder contains [int(key(s)) and key(s)], and the no of keys depends upon the dimensions of the mapping
         for vr in placeholder:
+            #slot is equal to mapping slot, then new slot is calculated using first key (in case of 2d mapping)
             f = w3.soliditySha3(['uint256', 'uint256'], [vr[0], slot])
             slot = w3.toInt(f)
-        if [w3.toInt(f), vr[1]] in map_slots:
-            continue
-        map_slots.append([w3.toInt(f), vr[1]])
+            keyss.append(vr[1])
+
+        if [slot] + keyss not in map_slots:
+            map_slots.append([slot]+ keyss)
+
     val = var['valueType']
     while 'valueType' in val:
         val = val['valueType']
-    p = 0
+
     for slot in map_slots:
         var_dict = {}
         var_dict['type'] = val['type']
@@ -315,9 +330,11 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
         elif val['type'] == 'UserDefinedTypeName':
             var_dict['dataType'] = var['namePath']
             var_dict['typeVars'] = all_contracts[var['typeName']['namePath']]['vars']
-        var_dict['name'] = var['name']+":key:"+slot[1]
+        keyss = ''
+        for slt in slot[1:]:
+            keyss = keyss+":"+slt
+        var_dict['name'] = var['name'] + ":key" + keyss
         _, slot_results = calculate_slots([var_dict], slot[0] - 1, all_contracts)
-        p = p + 1
         all_vars = extract_variables_data_from_chain(cont_addr, slot_results, all_contracts, contract_abi,
                             all_vars, key_approx_results, transacs, w3)
     return all_vars
@@ -480,5 +497,6 @@ def extract_contract_state(cont_name, source_code, cont_addr):
     results = extract_variables_data_from_chain(
         cont_addr, variables_slot_results, all_contracts_dict, contract_abi, all_vars, cont_keys_results, all_transactions, w3)   
     results = generate_readable_results(results, w3)
+    final_results = get_final_results(results)
     block = w3.eth.getBlock('latest')
-    return results, block['number']
+    return final_results, block['number']

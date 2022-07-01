@@ -15,8 +15,7 @@ def read_json(file_name, input_dir):
         read_file = json.load(f)
     return read_file
 
-def compare_results(current_results, expected_contract_state):
-    expected_results = ast.literal_eval(expected_contract_state['data'])
+def compare_results(current_results, expected_results):
     current_results_names = [var[0] for var in current_results]
     current_results_type = [var[1] for var in current_results]
     for exp_var in expected_results:

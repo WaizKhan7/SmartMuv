@@ -1,1 +1,1 @@
-{"name": "EXTOKEN", "address": "0x67a8bc3c4af9d44217506444d0d6052d1fc998c4", "block_number": 14351844, "data": "[['name', 'string', 'EXTOKEN', 32], ['symbol', 'string', '0KB', 32], ['decimals', 'uint8', 4, 1], ['totalSupply', 'uint256', 90000000000, 32], ['balanceOf:key:0x46347b64bbab6a50145391da46ab6c388e9c82ed', 'uint256', 89999000000, 32]]"}
+[["name", "string", "EXTOKEN", 32], ["symbol", "string", "0KB", 32], ["decimals", "uint8", 4, 1], ["totalSupply", "uint256", 90000000000, 32], ["balanceOf:key:0x46347b64bbab6a50145391da46ab6c388e9c82ed", "uint256", 89999000000, 32]]
