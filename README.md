@@ -1,6 +1,6 @@
 # SmartMuv
 
-[SmartMuv](www.smartmuv.app) is a smart contract analysis and extraction tool written in Python 3. SmartMuv can extract complete state of the smart contract and can help users to analyze, migrate and upgrade their smart contracts. As, Solidity does not keep track of keys of mapping variables, SmartMuv uses static time source code analysis techniques to perform key approximation analysis for mapping variables. Our tool can handle regular variables as well as user-defined variables and can automatically extract their values.
+[SmartMuv](https://www.smartmuv.app) is a smart contract analysis and extraction tool written in Python 3. SmartMuv can extract complete state of the smart contract and can help users to analyze, migrate and upgrade their smart contracts. As, Solidity does not keep track of keys of mapping variables, SmartMuv uses static time source code analysis techniques to perform key approximation analysis for mapping variables. Our tool can handle regular variables as well as user-defined variables and can automatically extract their values.
 
 ## System Requirements
 
