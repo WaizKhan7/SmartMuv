@@ -36,20 +36,24 @@ def run_slot_analysis_test():
     test_dir = config.get('test_directories', 'slot_analysis_directory')
     contracts = read_json("contracts", input_dir)
     print("Running on Slot Analysis Test...")
+    passed = 0
     for ind in range(len(contracts)):
         print("Checking on contract #", ind+1)
         contract_name = contracts[ind]['Contract Name']
         source_code = read_source_code(contract_name, input_dir)
-        current_var_slots = get_variables_slot(contract_name, source_code)
-        expected_var_slots = read_json(contract_name, test_dir)
-        result = compare_results(current_var_slots, expected_var_slots)
-        if result == False:
-            return False
-    return True            
+        try:
+            current_var_slots = get_variables_slot(contract_name, source_code)
+            expected_var_slots = read_json(contract_name, test_dir)
+            result = compare_results(current_var_slots, expected_var_slots)
+        except:
+            result = False
+        if result == True:
+            passed+=1
+    return passed, len(contracts)
 
 if __name__ == "__main__":
-    res = run_slot_analysis_test()
-    if res == False:
-        print("Test failed!")
+    passed, total = run_slot_analysis_test()
+    if passed < total:
+        print(f"Passed {passed} tests out of {total} tests")
     else:
-        print("Successfully completed slot analysis test!")
+        print("Successfully passed all slot analysis tests!")

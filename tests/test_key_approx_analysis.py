@@ -15,16 +15,15 @@ def read_json(file_name, input_dir):
     return read_file
 
 def compare_results(current_results, expected_results):
-    expected_results = expected_results['data']
     for cont in expected_results:
         for func in expected_results[cont]:
             try:
                 if expected_results[cont][func] != current_results[cont][func]:
                     print(func)
                     print("___________________________________")
-                    print(expected_results[func])
+                    print(expected_results[cont][func])
                     print("___________________________________")
-                    print(current_results[func])
+                    print(current_results[cont][func])
                     print("___________________________________")
                     return False
             except:
@@ -39,20 +38,25 @@ def key_analysis_test():
     test_dir = config.get('test_directories', 'key_analysis_directory')
     contracts = read_json("contracts", input_dir)
     print("Running Key Approximation Test...")
+    passed = 0
     for ind in range(len(contracts)):
         print("Checking on contract #", ind+1)
         contract_name = contracts[ind]['Contract Name']
+        compiler_version = contracts[int(ind)]['Compiler Version']
         source_code = read_source_code(contract_name, input_dir)
-        current_analysis_results = key_approx_analyzer(contract_name, source_code)
-        expected_analysis_results = read_json(contract_name, test_dir)
-        result = compare_results(current_analysis_results, expected_analysis_results)
-        if result == False:
-            return False
-    return True
+        try:
+            current_analysis_results, _ = key_approx_analyzer(contract_name, source_code, compiler_version)
+            expected_analysis_results = read_json(contract_name, test_dir)
+            result = compare_results(current_analysis_results, expected_analysis_results)
+        except:
+            result = False
+        if result == True:
+            passed+=1
+    return passed, len(contracts)
 
 if __name__ == "__main__":
-    res = key_analysis_test()
-    if res == False:
-        print("Test failed!")
+    passed, total = key_analysis_test()
+    if passed < total:
+        print(f"Passed {passed} tests out of {total} tests")
     else:
-        print("Successfully completed key approximation test!")
+        print("Successfully passed all key approximation tests!")

@@ -8,3 +8,6 @@ transactions
 Outputs
 .env
 .flaskenv
+myTestContract.sol
+config_exp
+test_smartmuv.py

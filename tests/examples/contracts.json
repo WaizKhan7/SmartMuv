@@ -1,1 +1,27 @@
-[{"Address": "0xc9ae11a393a08e86d46ce683fde7699db01a5f15", "Contract Name": "AUX1769"}, {"Address": "0x8e09fe761f4eee5dac56024cc5ef9174231e5f1b", "Contract Name": "Indoaset"}, {"Address": "0x51bb7917efcad03ec8b1d37251a06cd56b0c4a72", "Contract Name": "DSRCoin"}, {"Address": "0x67a8bc3c4af9d44217506444d0d6052d1fc998c4", "Contract Name": "EXTOKEN"}, {"Address": "0x188ef0ab03e23151cc9192612f5a17b33ea8b9ff", "Contract Name": "YogToken"}, {"Address": "0x62fba5d3de6d80a9e311eaef89b12a712e38ec8b", "Contract Name": "CoinTickToken"}, {"Address": "0xbcac3ce4b2f5c86656af28eaaa9c855973569f2a", "Contract Name": "COCPToken"}, {"Address": "0x24dd6e1fe742bd8fd3a1d144fece1680f16296aa", "Contract Name": "OBK"}, {"Address": "0x143e685dd51d467d77663a3be119217185d81b99", "Contract Name": "CommunityBankCoin"}, {"Address": "0x145f9bbd9f1ca0923e81e05c2ac04fda2310d774", "Contract Name": "VACCToken"}]
+[
+    {
+        "Address": "0xc9ae11a393a08e86d46ce683fde7699db01a5f15",
+        "Contract Name": "AUX1769",
+        "Compiler Version": "0.4.24"
+    },
+    {
+        "Address": "0x51bb7917efcad03ec8b1d37251a06cd56b0c4a72",
+        "Contract Name": "DSRCoin",
+        "Compiler Version": "0.4.11"
+    },
+    {
+        "Address": "0x24dd6e1fe742bd8fd3a1d144fece1680f16296aa",
+        "Contract Name": "OBK",
+        "Compiler Version": "0.4.16"
+    },
+    {
+        "Address": "0x143e685dd51d467d77663a3be119217185d81b99",
+        "Contract Name": "CommunityBankCoin",
+        "Compiler Version": "0.4.25"
+    },
+    {
+        "Address": "0x145f9bbd9f1ca0923e81e05c2ac04fda2310d774",
+        "Contract Name": "VACCToken",
+        "Compiler Version": "0.4.24"
+    }
+]

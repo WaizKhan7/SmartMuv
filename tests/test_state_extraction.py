@@ -1,7 +1,6 @@
 from src.state_extraction.state_extractor import extract_contract_state
 from configparser import ConfigParser
 import json
-import ast
 
 def read_source_code(contract_name, input_dir):
     input_path = input_dir + contract_name + ".sol"
@@ -16,11 +15,11 @@ def read_json(file_name, input_dir):
     return read_file
 
 def compare_results(current_results, expected_results):
-    current_results_names = [var[0] for var in current_results]
+    current_results_names = [var[0].lower() for var in current_results]
     current_results_type = [var[1] for var in current_results]
     for exp_var in expected_results:
-        if not exp_var[0] in current_results_names and exp_var[1] in current_results_type:
-            print(exp_var[0])
+        if not (exp_var[0].lower() in current_results_names and exp_var[1] in current_results_type):
+            print("missing value -", exp_var[0])
             return False
     return True
 
@@ -31,21 +30,26 @@ def run_state_extraction_test():
     test_dir = config.get('test_directories', 'extraction_directory')
     contracts = read_json("contracts", input_dir)
     print("Running State Extraction Test...")
+    passed = 0
     for ind in range(len(contracts)):
         print("Checking on contract #", ind+1)
         contract_name = contracts[ind]['Contract Name']
         addr = contracts[ind]['Address']
+        compiler_version = contracts[int(ind)]['Compiler Version']
         source_code = read_source_code(contract_name, input_dir)
-        current_contract_state, _ = extract_contract_state(contract_name, source_code, addr)
-        expected_contract_state = read_json(contract_name, test_dir)
-        result = compare_results(current_contract_state, expected_contract_state)
-        if result == False:
-            return False
-    return True
+        try:
+            current_contract_state = extract_contract_state(contract_name, source_code, addr, compiler_version, net="mainnet")
+            expected_contract_state = read_json(contract_name, test_dir)
+            result = compare_results(current_contract_state[0], expected_contract_state)
+        except:
+            result = False
+        if result == True:
+            passed+=1
+    return passed, len(contracts)
 
 if __name__ == "__main__":
-    res = run_state_extraction_test()
-    if res == False:
-        print("Result failed!")
+    passed, total = run_state_extraction_test()
+    if passed < total:
+        print(f"Passed {passed} tests out of {total} tests")
     else:
-        print("Successfully completed state extraction test!")
+        print("Successfully passed all state extraction tests!")

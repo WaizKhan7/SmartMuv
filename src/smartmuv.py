@@ -1,4 +1,5 @@
-from src.state_extraction.state_extractor import extract_contract_state
+from src.state_extraction.state_extractor import extract_contract_state, extract_regular_variables
+from src.key_approx_analysis.key_approx_analyzer import get_slot_details
 import json
 import pandas as pd
 from configparser import ConfigParser
@@ -14,16 +15,37 @@ if __name__ == "__main__":
     config = ConfigParser()
     config.read("config.ini")
     input_dir = config.get('directories', 'contract_directory')
-    with open(input_dir+"/contracts.json") as f:
-        contracts = json.load(f)
-    for index in range(len(contracts)):
-        print(index+1, " ", contracts[index]['Address'], " ", contracts[index]['Contract Name'])
-    num = input("Select contract no from above to run SmartMuv -> ")
-    contract_name = contracts[int(num)-1]['Contract Name']
-    addr = contracts[int(num)-1]['Address']
+    
+    contract_name = "CommunityBankCoin"
+    cont_addr = "0x143e685dd51d467d77663a3be119217185d81b99"
+    compiler_version = "0.4.25"
+    network = "mainnet"
+    
     source_code = read_source_code(contract_name, input_dir)
-    contract_state, current_block_number = extract_contract_state(contract_name, source_code, addr)
-    print("\nDetails of Extracted State Variables are:\n")
-    for var in contract_state:
-        print(var)
-        
+    print("Select the SmartMuv feature you want to use (1-3):")
+    options = """
+    1 - Regular Variables Extraction,
+    2 - Complete State Extraction,
+    3 - Slot Layout Details.
+    
+    Your Option - """
+    option = input(options)
+    if option == "1":
+        results, slots_details, block_number = extract_regular_variables(
+            contract_name, source_code, cont_addr, compiler_version, network)
+        print("\nDetails of Extracted Regular Variables are:\n")
+        for var in results:
+            print(var)
+
+    elif option == "2":
+        contract_state, variables_slot_results, slots_and_data, key_analysis_result, block_number = extract_contract_state(
+            contract_name, source_code, cont_addr, compiler_version, network)
+        print("\nDetails of Extracted Contract State:\n")
+        for var in contract_state:
+            print(var)
+    elif option == "3":
+        slots_details = get_slot_details(contract_name, source_code, compiler_version)
+        print("\nContract Slot Layout is:\n")
+        for var in slots_details:
+            print(var)
+    
