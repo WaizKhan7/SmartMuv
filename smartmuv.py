@@ -24,7 +24,7 @@ if __name__ == "__main__":
     options = """
     1 - Get Variable Slot Layout Details.
     2 - Extract Regular Variables.
-    3 - Extract Contract's Complete State.
+    3 - Extract Complete State.
     
     Your Option - """
     option = input(options)
