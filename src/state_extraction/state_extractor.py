@@ -468,22 +468,24 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
     return all_vars
 
 def extract_variables_data_from_chain(cont_addr, vars_slot, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
-    '''
-    Take state variables and return their value
-        Parameters:
-                cont_addr (str): Address of the contract,
-                vars_slot (list): Holds list of all state variables and slot details,
-                all_contracts (list): Holds details of all contracts,
-                contract_abi (list): ABI of the contract,
-                all_vars (str): Holds values of extracted variable,
-                key_approx_results (list): Holds results of key approximation analysis,
-                tx_arg_details (dict): List of all arguments extracted from transactions of every function,
-                slots_and_data (list): list of slot and data already extracted,
-                all_slots (list): list of slots already extracted/checked (used to make sure same value is not extracted multipe times),
-                w3 (object): web3 object.
-        Returns:
-                returns "all_vars" list with extracted values of provided "vars_slot" variables
-    '''
+    """
+    Take state variables and return their extracted value from the chain.
+
+    Parameters:
+        cont_addr (str): Address of the contract.
+        vars_slot (list): Holds list of all state variables and slot details.
+        all_contracts (list): Holds details of all contracts.
+        contract_abi (list): ABI of the contract.
+        all_vars (str): Holds values of extracted variable.
+        key_approx_results (list): Holds results of key approximation analysis.
+        tx_arg_details (dict): List of all arguments extracted from transactions of every function.
+        slots_and_data (list): list of slot and data already extracted.
+        all_slots (list): list of slots already extracted/checked (used to make sure same value is not extracted multipe times).
+        w3 (object): web3 object.
+
+    Returns:
+        all_vars (list): list of all extracted values of provided variables.
+    """
     elementary_vars = {}
     for var in vars_slot:
         if var['type'] == 'ElementaryTypeName':
@@ -511,7 +513,16 @@ def extract_variables_data_from_chain(cont_addr, vars_slot, all_contracts, contr
 
 
 def get_variables_slot(cont_name, source_code):
-    '''Takes in contract name, and source code, returns list of variable with their slot details'''
+    """
+    Takes in contract name, and source code, returns list of variable with their slot details.
+    
+    Parameters:
+        cont_name (str): contract name.
+        source_code (str): source code of the contract.
+    
+    Returns:
+        variables_slot_results (dict): details of slots of all state variables.
+    """
     children, _ = generate_ast(source_code)
     children.pop(0)
     _, all_contracts_dict = get_contract_details(children)
@@ -521,20 +532,22 @@ def get_variables_slot(cont_name, source_code):
 
 
 def extract_regular_variables(cont_name, source_code, cont_addr, compiler_version, net):
-    '''
+    """
     Takes contracts source code and other details and extracts values of all regular variables. 
-        Paramters:
-            cont_name (str): contract name,
-            source_code (str): source code of the contract,
-            cont_addr (str): contract address,
-            compiler_version (str): required Solidity compiler version,
-            net (str): Blockchain Network (should be configured in config.ini file).
-        Returns:
-            results (list): list of regular variables with extracted values,
-            slot_details (list): slot/storage layout,
-            slots_and_data (list): slots and their data/value,
-            block['number] (int): current block number.
-    '''    
+
+    Parameters:
+        cont_name (str): contract name.
+        source_code (str): source code of the contract.
+        cont_addr (str): contract address.
+        compiler_version (str): required Solidity compiler version.
+        net (str): Blockchain Network (should be configured in config.ini file).
+
+    Returns:
+        results (list): list of regular variables with extracted values.
+        slot_details (list): slot/storage layout.
+        slots_and_data (list): slots and their data/value.
+        block['number] (int): current block number.
+    """    
     config = ConfigParser()
     config.read("config.ini")
     if net == "test":
@@ -592,21 +605,23 @@ def extract_regular_variables(cont_name, source_code, cont_addr, compiler_versio
 
 
 def extract_contract_state(cont_name, source_code, cont_addr, compiler_version, net):
-    '''
+    """
     Takes contracts source code and other details and extracts complete state of the smart contract. 
-        Paramters:
-            cont_name (str): contract name,
-            source_code (str): source code of the contract,
-            cont_addr (str): contract address,
-            compiler_version (str): required Solidity compiler version,
-            net (str): Blockchain Network (should be configured in config.ini file).
-        Returns:
-            final_results (list): list of all state variables with extracted values,
-            slot_details (list): slot/storage layout,
-            slots_and_data (list): slots and their data/value,
-            key_analysis_result (dict): contains details of mapping keys' sources (all contracts),
-            block['number] (int): current block number.
-    '''    
+
+    Parameters:
+        cont_name (str): contract name.
+        source_code (str): source code of the contract.
+        cont_addr (str): contract address.
+        compiler_version (str): required Solidity compiler version.
+        net (str): Blockchain Network (should be configured in config.ini file).
+
+    Returns:
+        final_results (list): list of all state variables with extracted values.
+        slot_details (list): slot/storage layout.
+        slots_and_data (list): slots and their data/value.
+        key_analysis_result (dict): contains details of mapping keys' sources (all contracts).
+        block['number] (int): current block number.
+    """    
     
     config = ConfigParser()
     config.read("config.ini")

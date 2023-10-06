@@ -173,7 +173,7 @@ def get_arg_vars(expr):
 
 
 def unroll_struct(struct, all_contract_dict):
-    '''Takes in a struct data type, returns list of variables in the struct'''
+    """Takes in a struct data type, returns list of variables in the struct"""
     var_lst = []
     for var_struct in struct['members']:
         var_lst.append(format_variable(var_struct, all_contract_dict))
@@ -181,7 +181,7 @@ def unroll_struct(struct, all_contract_dict):
 
 
 def format_variable(var_struct, all_contracts_dict):
-    '''Takes in a variable, returns the formatted variable according to it's type'''
+    """Takes in a variable struct, returns the formatted variable according to it's type"""
     if var_struct['typeName']['type'] == 'ElementaryTypeName':
         var_dict = {}
         var_dict['type'] = var_struct['typeName']['type']
@@ -291,14 +291,16 @@ def variable_unrolling(subnodes, all_contracts_dict, all_vars):
 
 
 def get_contract_details(children):
-    '''
+    """
     Takes AST of the source code, and returns details of all defined contracts, structs and enums.
-        Parameters:
-            contracts (object): AST of source code containing AST of all contracts.
-        Returns:
-            all_vars (list): list of all state variables, 
-            all_contracts_dict (dict): contains details of all contracts defined in the source code.
-    '''
+
+    Parameters:
+        contracts (object): AST of source code containing AST of all contracts.
+
+    Returns:
+        all_vars (list): list of all state variables.
+        all_contracts_dict (dict): contains details of all contracts defined in the source code.
+    """
     all_vars = []
     all_contracts_dict = {}
     for contract in children:
@@ -338,7 +340,8 @@ def get_contract_details(children):
 
 
 def format_variable_new(var_struct, all_contracts_dict):
-    # Takes in a variable, returns the formatted variable according to it's type
+    """Takes in a variable struct, returns the formatted variable according to it's type"""
+    
     if var_struct['typeName']['nodeType'] == 'ElementaryTypeName':
         var_dict = {}
         var_dict['type'] = var_struct['typeName']['nodeType']
@@ -410,7 +413,7 @@ def format_variable_new(var_struct, all_contracts_dict):
         return var_dict
 
 def unroll_struct_new(struct, all_contract_dict):
-    '''Takes in a struct data type, returns list of variables in the struct'''
+    """Takes in a struct data type, returns list of variables in the struct"""
     var_lst = []
     for var_struct in struct['members']:
         var_lst.append(format_variable_new(var_struct, all_contract_dict))
@@ -459,14 +462,16 @@ def variable_unrolling_new(subnodes, all_contracts_dict, all_vars):
     return statevars, all_contracts_dict, all_vars
 
 def get_contract_details_new(contracts):
-    '''
+    """
     Takes AST of the source code, and returns details of all defined contracts, structs and enums.
-        Parameters:
-            contracts (object): AST of source code containing AST of all contracts.
-        Returns:
-            all_vars (list): list of all state variables, 
-            all_contracts_dict (dict): contains details of all contracts defined in the source code.
-    '''
+
+    Parameters:
+        contracts (object): AST of source code containing AST of all contracts.
+
+    Returns:
+        all_vars (list): list of all state variables.
+        all_contracts_dict (dict): contains details of all contracts defined in the source code.
+    """
     all_vars = []
     all_contracts_dict = {}
     for contract in contracts:
@@ -585,21 +590,23 @@ def generate_final_key_approx_results(results):
     return final_results
 
 def reach_analysis(cont_name, func_name, slither, state_vars, func_ast_nodes, cont_mappings, compiler_version):
-    '''
+    """
     Performs Reach Analysis on the provided function using its cfg to determine outnode of each line of code of provided function.
     Reach Analysis: "data-flow analysis which statically determines which definitions may reach a given point in the code." 
-        Paramters:
-            cont_name (str): contract name,
-            func_name (str): function name to be analyzed,
-            slither (object): Slither object,
-            state_vars (list): list of contract's state variables,
-            func_ast_nodes (dict): AST of the function,
-            cont_mappings (list): list of all detected state contract mappings,
-            compiler_version (str): required Solidity version.
-        Returns:
-            in_nodes (dict): in nodes details of each function node,
-            marked_nodes (list): list of all marked node for backtracking. 
-    '''
+
+    Parameters:
+        cont_name (str): contract name.
+        func_name (str): function name to be analyzed.
+        slither (object): Slither object.
+        state_vars (list): list of contract's state variables.
+        func_ast_nodes (dict): AST of the function.
+        cont_mappings (list): list of all detected state contract mappings.
+        compiler_version (str): required Solidity version.
+
+    Returns:
+        in_nodes (dict): in nodes details of each function node.
+        marked_nodes (list): list of all marked node for backtracking. 
+    """
     out_nodes = {}
     in_nodes = {}
     func_nodes = generate_function_cfg(slither, cont_name, func_name)
@@ -647,18 +654,18 @@ def reach_analysis(cont_name, func_name, slither, state_vars, func_ast_nodes, co
 
 
 def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
-    '''
+    """
     Performs back tracking analysis on nodes marked during reach analysis, to get source of mapping keys from with in the marked nodes.
         Parameter:
-            current_contract (str): contract name,
-            func_name (str): function name, 
-            marked_nodes (list): list of nodes marked during reach analysis,
-            in_nodes (dict): in nodes details of each function node,
+            current_contract (str): contract name.
+            func_name (str): function name.
+            marked_nodes (list): list of nodes marked during reach analysis.
+            in_nodes (dict): in nodes details of each function node.
             slither (object): Slither object.
         Returns:
-            back_track_results (list): results of key source from back tracking,
+            back_track_results (list): results of key source from back tracking.
             tou_key_list (list): list of keys that could not be back tracked.
-    '''
+    """
     in_nodes = copy.deepcopy(in_nodes)
     func_nodes = generate_function_cfg(slither, current_contract, func_name)
     back_track_results = []
@@ -792,23 +799,25 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
 
 
 def key_approx_analysis(contract_name, contract, state_vars, func_name, slither, functions_ast, cont_mappings, results, compiler_version):
-    '''
+    """
     Performs key approximation analysis on provided function using ASTs and CFGs.
-        Parameters:
-            contract_name (str): contract name, 
-            contract (str): name of current contract type being analyzed, 
-            state_vars (list): list of all state variables in the contract, 
-            func_name (ste): name of function to run analysis on, 
-            slither (object): Slither object used to get CFGs, 
-            functions_ast (list): list of functions of all contracts in the source code, 
-            cont_mappings (list): list of all detected state contract mappings,
-            results (list): list of all key approximation analysis results, 
-            compiler_version (str): required compiler version.
-        Returns:
-            results (list): list of all key approximation analysis results, 
-            functions_ast (list): list of functions of all contracts in the source code, 
-            tou_keys (list): list of all keys marked as tou (could not back tracked).
-    '''
+    
+    Parameters:
+        contract_name (str): contract name.
+        contract (str): name of current contract type being analyzed.
+        state_vars (list): list of all state variables in the contract.
+        func_name (ste): name of function to run analysis on. 
+        slither (object): Slither object used to get CFGs.
+        functions_ast (list): list of functions of all contracts in the source code. 
+        cont_mappings (list): list of all detected state contract mappings.
+        results (list): list of all key approximation analysis results. 
+        compiler_version (str): required compiler version.
+    
+    Returns:
+        results (list): list of all key approximation analysis results.
+        functions_ast (list): list of functions of all contracts in the source code.
+        tou_keys (list): list of all keys marked as tou (could not back tracked).
+    """
     fbody_found = False
     for ind, func in enumerate(functions_ast[contract]):
         if func['name'] == func_name:
