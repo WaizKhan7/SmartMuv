@@ -11,3 +11,6 @@ Outputs
 myTestContract.sol
 config_exp
 test_smartmuv.py
+dist
+smartmuv.egg-info
+test_env
