@@ -41,7 +41,7 @@ if __name__ == "__main__":
             print(slot)
 
     elif option == "2":
-        results, slots_details, block_number = extract_regular_variables(
+        results, slots_details, slots_and_data, block_number = extract_regular_variables(
             contract_name, source_code, cont_addr, compiler_version, "mainnet")
         print("\nDetails of Extracted Regular Variables are:\n")
         for var in results:
