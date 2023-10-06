@@ -656,7 +656,7 @@ def reach_analysis(cont_name, func_name, slither, state_vars, func_ast_nodes, co
 def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
     """
     Performs back tracking analysis on nodes marked during reach analysis, to get source of mapping keys from with in the marked nodes.
-        Parameter:
+        Parameters:
             current_contract (str): contract name.
             func_name (str): function name.
             marked_nodes (list): list of nodes marked during reach analysis.
