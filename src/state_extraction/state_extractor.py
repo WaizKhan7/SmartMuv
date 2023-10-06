@@ -19,7 +19,7 @@ from configparser import ConfigParser
 import copy
 warnings.filterwarnings("ignore")
 
-
+# switch Solidity compiler to required version
 def switch_compiler(compiler_version):
     if compiler_version != '':
         for i in range(len(compiler_version)):
@@ -74,6 +74,7 @@ def get_final_results(results):
             pass
     return final_results
 
+# transforms raw extracted data into readable format
 def generate_readable_results(contract_addr, results, w3):
     for var in results:
         if len(var) < 5:
@@ -124,6 +125,7 @@ def generate_readable_results(contract_addr, results, w3):
                 var[2] = w3.to_hex(w3.to_bytes(hexstr=var[2]))
     return results
 
+#convert raw value to provided variable type
 def get_variable_value(var_value, var_type , w3):
     if 'int' in var_type or 'uint' in var_type:
         try:
@@ -187,7 +189,7 @@ def generate_abi(source_code, cont_name):
             break
     return cont_abi
 
-
+# extracts data/values of regular/elementary variables
 def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
 
     var_lst = []
@@ -233,6 +235,7 @@ def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
             var_lst.append(extracted_var)
     return var_lst, slots_and_data
 
+# extracts data/values of user-defined variables
 def extract_user_defined_vars_data(cont_addr, var, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
     try:
         all_vars = extract_variables_data_from_chain(
@@ -242,6 +245,7 @@ def extract_user_defined_vars_data(cont_addr, var, all_contracts, contract_abi, 
             cont_addr, var['typeVars'], all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3)
     return all_vars
 
+# extracts data/values of array type variables
 def extract_array_data(cont_addr, var, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
                 
     levels = len(var['length'])  # levels/dimensions of array
@@ -284,6 +288,7 @@ def extract_array_data(cont_addr, var, all_contracts, contract_abi, all_vars, ke
                             all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3)
     return all_vars
 
+# extracts data/values of mapping type variables
 def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
     keys_type = []
     mapping_ast = var
@@ -465,19 +470,19 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
 def extract_variables_data_from_chain(cont_addr, vars_slot, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
     '''
     Take state variables and return their value
-            Parameters:
-                    cont_addr(str): Address of the contract
-                    vars_slot(list): Holds list of all state variables and slot details
-                    all_contracts(list): Holds details of all contracts
-                    contract_abi(list): ABI of the contract
-                    all_vars(str): Holds values of extracted variable
-                    key_approx_results(list): Holds results of key approximation analysis
-                    tx_arg_details(dict): List of all arguments extracted from transactions of every function
-                    w3(object): web3 object for ethereum archive node connection
-                    slots_and_data: list of slot and data already extracted
-                    all_slots: list of slots already extracted (used to make sure same value is not extracted multipe times)
-            Returns:
-                    returns all_vars list with values of variables added 
+        Parameters:
+                cont_addr (str): Address of the contract,
+                vars_slot (list): Holds list of all state variables and slot details,
+                all_contracts (list): Holds details of all contracts,
+                contract_abi (list): ABI of the contract,
+                all_vars (str): Holds values of extracted variable,
+                key_approx_results (list): Holds results of key approximation analysis,
+                tx_arg_details (dict): List of all arguments extracted from transactions of every function,
+                slots_and_data (list): list of slot and data already extracted,
+                all_slots (list): list of slots already extracted/checked (used to make sure same value is not extracted multipe times),
+                w3 (object): web3 object.
+        Returns:
+                returns "all_vars" list with extracted values of provided "vars_slot" variables
     '''
     elementary_vars = {}
     for var in vars_slot:
@@ -516,7 +521,20 @@ def get_variables_slot(cont_name, source_code):
 
 
 def extract_regular_variables(cont_name, source_code, cont_addr, compiler_version, net):
-    '''Takes in contract name, source code, and address, returns list of regular variable with extracted values and current block number'''
+    '''
+    Takes contracts source code and other details and extracts values of all regular variables. 
+        Paramters:
+            cont_name (str): contract name,
+            source_code (str): source code of the contract,
+            cont_addr (str): contract address,
+            compiler_version (str): required Solidity compiler version,
+            net (str): Blockchain Network (should be configured in config.ini file).
+        Returns:
+            results (list): list of regular variables with extracted values,
+            slot_details (list): slot/storage layout,
+            slots_and_data (list): slots and their data/value,
+            block['number] (int): current block number.
+    '''    
     config = ConfigParser()
     config.read("config.ini")
     if net == "test":
@@ -570,11 +588,26 @@ def extract_regular_variables(cont_name, source_code, cont_addr, compiler_versio
     results = all_vars
     results = generate_readable_results(cont_addr, results, w3)
     block = w3.eth.get_block('latest')
-    return results, slot_details, block['number']
+    return results, slot_details, slots_and_data, block['number']
 
 
 def extract_contract_state(cont_name, source_code, cont_addr, compiler_version, net):
-    '''Takes in a source file path, contract name, and address of contract, returns list of variable with extracted values and current block number'''
+    '''
+    Takes contracts source code and other details and extracts complete state of the smart contract. 
+        Paramters:
+            cont_name (str): contract name,
+            source_code (str): source code of the contract,
+            cont_addr (str): contract address,
+            compiler_version (str): required Solidity compiler version,
+            net (str): Blockchain Network (should be configured in config.ini file).
+        Returns:
+            final_results (list): list of all state variables with extracted values,
+            slot_details (list): slot/storage layout,
+            slots_and_data (list): slots and their data/value,
+            key_analysis_result (dict): contains details of mapping keys' sources (all contracts),
+            block['number] (int): current block number.
+    '''    
+    
     config = ConfigParser()
     config.read("config.ini")
     if net == "test":
