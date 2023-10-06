@@ -1,6 +1,6 @@
 
 def get_bytes(_type):
-    '''Takes in a type name, returns the bytes for the type'''
+    """Takes in a type name, returns the bytes for the type"""
     # Can be optimized with static allocation of sizemap
     sizemap = {'uint': 32, 'uint256': 32, 'address': 20, 'int256': 32,
                'int': 32, 'string32': 32, 'bool': 1, 'string': 32, 'bytes': 32, 'enum': 1}
@@ -14,7 +14,7 @@ def get_bytes(_type):
 
 
 def calculate_slots(var_list, curr_slot_num, all_contracts):
-    '''Takes in a array of variables, start slot number and list of all contracts inside the source file, returns slot number of each variable in the input array'''
+    """Takes in a list of variables, start slot number and list of all contracts inside the source file, returns slot number of each variable in the input list of variables"""
     current_slot_bytes = []
     current_slot_vars = []
     vars_slot_details = []
