@@ -559,6 +559,9 @@ def extract_regular_variables(cont_name, source_code, cont_addr, compiler_versio
     elif net == "mumbai":
         BLOCKCHAIN_NODE_LINK = config.get('infura', 'rpc_poly_test_node_link')
         BLOCKCHAIN_NODE_PID = config.get('infura', 'rpc_poly_test_pid')
+    elif net == "polygon":
+        BLOCKCHAIN_NODE_LINK = config.get('infura', 'rpc_poly_node_link')
+        BLOCKCHAIN_NODE_PID = config.get('infura', 'rpc_poly_pid')
     elif net == "bsctest":
         BLOCKCHAIN_NODE_LINK = config.get('infura', 'rpc_bsc_test_node_link')
         BLOCKCHAIN_NODE_PID = config.get('infura', 'rpc_bsc_test_pid')
