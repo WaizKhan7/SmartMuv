@@ -17,8 +17,9 @@ if __name__ == "__main__":
     contract_name = "CommunityBankCoin"
     cont_addr = "0x143e685dd51d467d77663a3be119217185d81b99"
     compiler_version = "0.4.25"
-    network = "mainnet"
-    
+    # you can either add network of your own choice or choose from the following options:
+    # "test" (Goerli), "mainnet" (Ethereum Mainnet), "mumbai", "polygon", "bsctest", and "bsc"
+    network = "mainnet"    
     source_code = read_source_code(contract_name, input_dir)
     print("Select the SmartMuv feature you want to use (1-3):")
     options = """
