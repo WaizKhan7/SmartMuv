@@ -190,6 +190,8 @@ def format_variable(var_struct, all_contracts_dict):
         return var_dict
     elif var_struct['typeName']['type'] == 'UserDefinedTypeName':      
         # if userdefined variable is an enum, treat it as elementary type
+        if "." in var_struct['typeName']['namePath']:
+            var_struct['typeName']['namePath'] = var_struct['typeName']['namePath'].split(".")[-1]
         try:
             var_struct_data_type = all_contracts_dict[var_struct['typeName']['namePath']]['vars'][0]['dataType']
         except:

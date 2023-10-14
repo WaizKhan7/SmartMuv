@@ -387,10 +387,21 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
             key_val = all_dim_keys[lev][0]
             if key_val == '':
                 continue
-            if key_type == 'address' or 'string' in key_type:
-                slot_key = [w3.to_int(hexstr=key_val), key_val]
-                if slot_key not in placeholder:
-                    placeholder.append(slot_key)
+            if key_type == 'address':
+                try:
+                    slot_key = [w3.to_int(hexstr=key_val), key_val]
+                    if slot_key not in placeholder:
+                        placeholder.append(slot_key)
+                except:
+                    pass
+            elif 'string' in key_type:
+                try:
+                    key_val = key_val.encode().hex()
+                    slot_key = [w3.to_int(hexstr=key_val), key_val]
+                    if slot_key not in placeholder:
+                        placeholder.append(slot_key)
+                except:
+                    pass
             elif 'bytes' in key_type:
                 try:
                     key_val = w3.to_hex(key_val)

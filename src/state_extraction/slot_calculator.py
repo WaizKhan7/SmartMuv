@@ -102,8 +102,9 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
                             var_dict['name'] = current_var['name']+'.'+varr['name']
                     var_dict['type'] = varr['type']
                     # var_dict['name'] = var['name']+'.'+varr['name']
-                    var_dict['bytes'] = varr['bytes']
-                    var_dict['dataType'] = varr['dataType']
+                    if varr['type'] != "Mapping":
+                        var_dict['bytes'] = varr['bytes']
+                        var_dict['dataType'] = varr['dataType']
                     var_dict['slot'] = varr['slot']
                     vars_slot_details.append(var_dict)
             else: # if its a contract definition, then it just a pointer/address and will not need a new slot like struct
