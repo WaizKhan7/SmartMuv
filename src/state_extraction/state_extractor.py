@@ -405,11 +405,16 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
             elif 'bytes' in key_type:
                 try:
                     key_val = w3.to_hex(key_val)
+                    slot_key = [w3.to_int(hexstr=key_val), key_val]
+                    if slot_key not in placeholder:
+                        placeholder.append(slot_key)
                 except:
-                    pass
-                slot_key = [w3.to_int(hexstr=key_val), key_val]
-                if slot_key not in placeholder:
-                    placeholder.append(slot_key)
+                    try:
+                        slot_key = [w3.to_int(hexstr=key_val), key_val]
+                        if slot_key not in placeholder:
+                            placeholder.append(slot_key)
+                    except Exception as e:
+                        print(e, key_val)
             elif 'uint' in key_type:
                 slot_key = [int(key_val), key_val]
                 if slot_key not in placeholder:
