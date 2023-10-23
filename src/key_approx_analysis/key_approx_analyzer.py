@@ -633,11 +633,11 @@ def reach_analysis(cont_name, func_name, slither, state_vars, func_ast_nodes, co
         for son in node._sons:
                 node_stack.append(son)
         while len(node_stack) > 0:
-            node = node_stack.pop()
+            node = node_stack.pop(0)
             exec_sequence.append(node)
             new_sucs = node.sons
             for node in new_sucs:
-                if node not in exec_sequence:
+                if node not in exec_sequence and node not in node_stack: # if already visited... skip
                     node_stack.append(node)
 
     for node in exec_sequence:
