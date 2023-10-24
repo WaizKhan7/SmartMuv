@@ -44,7 +44,7 @@ if __name__ == "__main__":
             print(var)
 
     elif option == "3":
-        contract_state, variables_slot_results, slots_and_data, key_analysis_result, block_number = extract_contract_state(
+        contract_state, _, variables_slot_results, slots_and_data, key_analysis_result, block_number = extract_contract_state(
             contract_name, source_code, cont_addr, compiler_version, "mainnet")
         print("\nDetails of Extracted Contract State:\n")
         for var in contract_state:
