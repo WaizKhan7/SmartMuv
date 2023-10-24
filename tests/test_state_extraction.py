@@ -40,7 +40,7 @@ def run_state_extraction_test():
         try:
             current_contract_state = extract_contract_state(contract_name, source_code, addr, compiler_version, net="mainnet")
             expected_contract_state = read_json(contract_name, test_dir)
-            result = compare_results(current_contract_state[0], expected_contract_state)
+            result = compare_results(current_contract_state[1], expected_contract_state)
         except:
             result = False
         if result == True:

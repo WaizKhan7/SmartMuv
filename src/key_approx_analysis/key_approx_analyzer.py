@@ -139,37 +139,22 @@ def expr_helper(stmt):
     elif stmt['type'] == 'UnaryOperation':
         return 'tou'
 
-
-def get_arg_vars(expr):
-    arg_list = []
-    split_expr = expr.split(').', 1)
-    cont_name = ''
-    if len(split_expr) > 1:
-        func_expr = split_expr[1]
-        temp = split_expr[0].split('(')
-        cont_name = temp[0].strip()
-    else:
-        func_expr = split_expr[0]
-    try:
-        temp = func_expr.split('(', 1)
-        func_name = temp[0]
-        arg_expr = temp[1]
-    except:
-        temp = expr.split('(', 1)
-        func_name = temp[0]
-        arg_expr = temp[1]
-    args_split = arg_expr.split(',')
-    if len(args_split) > 1:
-        for ind, arg in enumerate(args_split):
-            if ind == len(args_split)-1:
-                var = arg[:-1]
-                arg_list.append(var.strip())
+def get_vars(expr):
+    return_vars = []
+    vars_split = expr.split(',')
+    if len(vars_split) > 1:
+        for ind, var in enumerate(vars_split):
+            if ind == 0:
+                var = var[1:]
+                return_vars.append(var.strip())
+            elif ind == len(vars_split)-1:
+                var = var[:-1]
+                return_vars.append(var.strip())
             else:
-                var = arg
-                arg_list.append(var.strip())
+                return_vars.append(var.strip())
     else:
-        arg_list.append(args_split[0][:-1].strip())
-    return cont_name, func_name, arg_list
+        return_vars.append(vars_split[0].strip())
+    return return_vars
 
 
 def unroll_struct(struct, all_contract_dict):
@@ -743,18 +728,41 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
                     if 'identifier' in right_type:
                         new_var = str(right.value)
                         new_var = new_var.replace('msg:m:sender', 'msg.sender')
+                        if ':m:' in new_var:
+                            new_var = new_var.split(':m:')[0]
                         defs = in_nodes[key_source_id]
                         def_found = False
                         for deff in defs:
                             if deff[0] == new_var and def_found == False:
-                                key_source_id = deff[1]
+                                temp_id = deff[1]
                                 map_key[0] = new_var
                                 def_found = True
                             elif deff[0] == new_var and def_found == True:
                                 map_keys_details[key_idx].append([new_var, deff[1], 'regular'])
+                        key_source_id = temp_id
                     elif 'literal' in right_type:
                         key_val = str(right.value)
                         break
+                    elif 'tuple_expression' in right_type: # source of value is some tuple expression
+                        left_vals = get_vars(str(exp.expression_left))
+                        right_vals = get_vars(str(right))
+                        for i, val in enumerate(left_vals):
+                            if map_key[0] == val:
+                                new_var = right_vals[i]
+                                break
+                        new_var = new_var.replace('msg:m:sender', 'msg.sender')
+                        if ':m:' in new_var:
+                            new_var = new_var.split(':m:')[0]
+                        defs = in_nodes[key_source_id]
+                        def_found = False
+                        for deff in defs:
+                            if deff[0] == new_var and def_found == False:
+                                temp_id = deff[1]
+                                map_key[0] = new_var
+                                def_found = True
+                            elif deff[0] == new_var and def_found == True:
+                                map_keys_details[key_idx].append([new_var, deff[1], 'regular'])
+                        key_source_id = temp_id
                     else:
                         new_details_added = True
                         map_keys_details[key_idx].append([map_key[0], 'tou', 'others'])

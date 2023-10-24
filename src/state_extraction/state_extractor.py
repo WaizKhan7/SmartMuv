@@ -68,10 +68,8 @@ def switch_compiler(compiler_version):
 def get_final_results(results):
     final_results = []
     for res in results:
-        if res[-3] != 0:
+        if not (res[-3]  == "0x0000000000000000000000000000000000000000" and "key" in res[0]):
             final_results.append(res)
-        else:
-            pass
     return final_results
 
 # transforms raw extracted data into readable format
@@ -313,12 +311,21 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                     if len(all_dim_keys) != key_dim:
                         continue
                     for i, key in enumerate(all_dim_keys):
+                        not_global  = True
                         if key[3] == 'Global':
+                            g_found = False
+                            not_global = False
                             for g_var in all_vars:
                                 if key[1] == g_var[0]:
                                     g_var_value = get_variable_value(g_var[2], g_var[1], w3)
+                                    print(f"Global variables key ({g_var[0]})->", g_var_value)
                                     key_details[2+(i*6)] = g_var_value
-                    all_keys.append(key_details)
+                                    g_found = True
+                    if not_global:   
+                        all_keys.append(key_details)
+                    else:
+                        if g_found:
+                            all_keys.append(key_details)
             for key in all_keys:
                 # extracting key details of each key in case mapping is multi dimensional
                 dim_keys = [key[q:q + 6] for q in range(0, len(key), 6)]
@@ -354,7 +361,7 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                                         else:
                                             dim[lev] = [[func_inputs[arg], transaction_abi[key_arg_pos]['type']]]
                                         break
-                #if keys for all dimensions are extracted successfully
+                # if keys for all dimensions are extracted successfully
                 if len(dim) == len(dim_keys):
                     diff_lens = False
                     keys_list = []
@@ -385,42 +392,36 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
         for lev in range(0, key_dim):
             key_type = all_dim_keys[lev][1]
             key_val = all_dim_keys[lev][0]
-            if key_val == '':
-                continue
             if key_type == 'address':
                 try:
                     slot_key = [w3.to_int(hexstr=key_val), key_val]
-                    if slot_key not in placeholder:
-                        placeholder.append(slot_key)
+                    placeholder.append(slot_key)
                 except:
-                    pass
+                    print(slot_key)
             elif 'string' in key_type:
                 try:
                     key_val = key_val.encode().hex()
                     slot_key = [w3.to_int(hexstr=key_val), key_val]
-                    if slot_key not in placeholder:
-                        placeholder.append(slot_key)
+                    placeholder.append(slot_key)
                 except:
-                    pass
+                    print(slot_key)
             elif 'bytes' in key_type:
                 try:
                     key_val = w3.to_hex(key_val)
                     slot_key = [w3.to_int(hexstr=key_val), key_val]
-                    if slot_key not in placeholder:
-                        placeholder.append(slot_key)
+                    placeholder.append(slot_key)
                 except:
                     try:
                         slot_key = [w3.to_int(hexstr=key_val), key_val]
-                        if slot_key not in placeholder:
-                            placeholder.append(slot_key)
+                        placeholder.append(slot_key)
                     except Exception as e:
-                        print(e, key_val)
+                        print(key_val, e)
+                    
             elif 'uint' in key_type:
                 slot_key = [int(key_val), key_val]
-                if slot_key not in placeholder:
-                    placeholder.append(slot_key)
+                placeholder.append(slot_key)
             else:
-                print("skipped...")
+                print("skipped...", key_type, key_val)
 
         slot = var['slot']
         keyss = []
@@ -469,18 +470,18 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                     except Exception as e:
                         print("Warning: Could not extract -", var['name'], e)
                         continue
-            
+                    
             keyss = ''
             for key in slot[1:]:
                 keyss = keyss+":"+str(key)
             var_dict['name'] = var['name'] + ":key" + keyss
             try:
                 _, slot_results = calculate_slots([var_dict], slot[0] - 1, all_contracts)
+                all_vars = extract_variables_data_from_chain(cont_addr, slot_results, all_contracts, contract_abi,
+                                    all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3)
             except Exception as e:
                 print("Warning: Could not extract -", var_dict['name'], e)
                 
-            all_vars = extract_variables_data_from_chain(cont_addr, slot_results, all_contracts, contract_abi,
-                                all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3)
     return all_vars
 
 def extract_variables_data_from_chain(cont_addr, vars_slot, all_contracts, contract_abi, all_vars, key_approx_results, tx_arg_details, slots_and_data, all_slots, w3):
@@ -712,7 +713,7 @@ def extract_contract_state(cont_name, source_code, cont_addr, compiler_version, 
             contract = w3.eth.contract(abi=cont_abi)
             transac_input = contract.decode_function_input(tran['input'])
         except Exception as e:
-            print("Warning:", str(e))
+            # print("Warning:", str(e))
             continue
         func_name = transac_input[0].fn_name
         if func_name in tx_arg_details:
@@ -734,5 +735,5 @@ def extract_contract_state(cont_name, source_code, cont_addr, compiler_version, 
     print("Length of complete results ->", len(final_results))
     print("Length of Slot and Data ->", len(slots_and_data))
     block = w3.eth.get_block('latest')
-    return final_results, slot_details, slots_and_data, key_analysis_result, block['number']
+    return final_results, results, slot_details, slots_and_data, key_analysis_result, block['number']
 

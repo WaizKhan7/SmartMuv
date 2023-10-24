@@ -19,7 +19,7 @@ def get_transactions(cont_addr, transactions, endpoint, api_key):
                 transactions.extend(txs)
                 page += 1
             else:
-                print(response["message"])
+                # print(response["message"])
                 break
         except requests.exceptions.RequestException as e:
             print("Error occurred:", e)
@@ -41,7 +41,7 @@ def get_internal_transactions(cont_addr, transactions, endpoint, api_key):
                 transactions.extend(txs)
                 page += 1
             else:
-                print(response["message"])
+                # print(response["message"])
                 break
         except requests.exceptions.RequestException as e:
             print("Error occurred:", e)
