@@ -184,6 +184,8 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
                         var_dict['name'] = current_var['name']+":"+str(i)
                         if var_dict['type'] == 'UserDefinedTypeName':
                             # if user defined is an enum
+                            if "." in var_dict['dataType']:
+                                var_dict['dataType'] = var_dict['dataType'].split(".")[-1]
                             if all_contracts[var_dict['dataType']]['vars'][0]['dataType'] == 'enum':
                                 var_dict['type'] = 'ElementaryTypeName'
                                 var_dict['dataType'] = 'enum'

@@ -255,13 +255,16 @@ def variable_unrolling(subnodes, all_contracts_dict, all_vars):
             vars = node['variables']
             for variable in vars:
                 # grab the value if the value is assigned to a variable at compile time
-                if variable['isDeclaredConst'] == True:
-                    if 'value' in variable['expression']:
-                        all_vars.append(
-                            [variable['name'], variable['typeName']['name'], variable['expression']['value']])
-                    elif 'number' in variable['expression']:
-                        all_vars.append(
-                            [variable['name'], variable['typeName']['name'], variable['expression']['number']])
+                if variable['isDeclaredConst'] == True or variable['isDeclaredImmutable'] == True:
+                    try:
+                        if 'value' in variable['expression']:
+                            all_vars.append(
+                                [variable['name'], variable['typeName']['name'], variable['expression']['value']])
+                        elif 'number' in variable['expression']:
+                            all_vars.append(
+                                [variable['name'], variable['typeName']['name'], variable['expression']['number']])
+                    except:
+                        pass
                     continue
                 statevars.append(format_variable(variable, all_contracts_dict))
         elif node['type'] == 'StructDefinition':
@@ -496,36 +499,30 @@ def get_contract_details_new(contracts):
     return all_vars, all_contracts_dict
 
 
-def handle_func_nodes(in_nodes, node, compiler_version):
-    out_nodes = copy.deepcopy(in_nodes)
-    tmp = str(node).split()
-    keywrd = tmp[0]
-    exp = str(node.expression)
-    if keywrd == 'NEW':
-        var = exp.split(' = ')[0]
-        out_nodes.append([var, int(node.node_id)])
+def handle_expression_node(exp, out_nodes, node, compiler_version):
+    var = exp.split(' = ')[0]  # get left hand operand
+    var = var.split('.')[0]  # get classname if member is being accessed
+    if var[:8] == 'require(':
         return out_nodes
-
-    elif keywrd == 'EXPRESSION':
-        var = exp.split(' = ')[0]  # get left hand operand
-        var = var.split('.')[0]  # get classname if member is being accessed
-        if var[:8] == 'require(':
-            return out_nodes
-        vars_used = []
-        code = "pragma solidity " + compiler_version + \
-            ";\ncontract test3 {   \n    function test () public {\n       " + \
-            exp + ";\n    }    \n}"
-        try:
-            children, _ = generate_ast(code)
-        except:
-            return out_nodes
-        contract = children[1]
-        statements = contract['subNodes'][0]['body']['statements'][0]
-        stmt = statements
-        if 'expression' not in stmt:
-            return out_nodes
-        if stmt['expression']['type'] == 'BinaryOperation':
-            sub_stmt = stmt['expression']['left']
+    vars_used = []
+    code = "pragma solidity " + compiler_version + \
+        ";\ncontract test3 {   \n    function test () public {\n       " + \
+        exp + ";\n    }    \n}"
+    try:
+        children, _ = generate_ast(code)
+    except:
+        return out_nodes
+    contract = children[1]
+    statements = contract['subNodes'][0]['body']['statements'][0]
+    stmt = statements
+    if 'expression' not in stmt:
+        return out_nodes
+    if stmt['expression']['type'] == 'BinaryOperation':
+        sub_stmt_dict = {}
+        sub_stmt_dict['left'] = stmt['expression']['left']
+        sub_stmt_dict['right'] = stmt['expression']['right']
+        for key in sub_stmt_dict:
+            sub_stmt = sub_stmt_dict[key]
             while 'left' in sub_stmt:
                 var_expr = expr_helper(sub_stmt)
                 if type(var_expr) == str:
@@ -545,16 +542,30 @@ def handle_func_nodes(in_nodes, node, compiler_version):
             elif type(var_expr) == list:
                 for vexp in var_expr:
                     vars_used.append(vexp)
-        else:
-            return out_nodes
-        # updates the old definition with new one
-        for var in vars_used:
-            for dff in out_nodes:
-                if dff[0] == var:
-                    ind = out_nodes.index(dff)
-                    out_nodes.pop(ind)
-                    out_nodes.append([var, int(node.node_id)])
-                    break
+    else:
+        return out_nodes
+    # updates the old definition with new one
+    for var in vars_used:
+        for dff in out_nodes:
+            if dff[0] == var:
+                ind = out_nodes.index(dff)
+                out_nodes.pop(ind)
+                out_nodes.append([var, int(node.node_id)])
+                break
+    return out_nodes
+
+def handle_func_nodes(in_nodes, node, compiler_version):
+    out_nodes = copy.deepcopy(in_nodes)
+    tmp = str(node).split()
+    keywrd = tmp[0]
+    exp = str(node.expression)
+    if keywrd == 'NEW':
+        var = exp.split(' = ')[0]
+        out_nodes.append([var, int(node.node_id)])
+        out_nodes = handle_expression_node(exp, out_nodes, node, compiler_version)
+        return out_nodes
+    elif keywrd == 'EXPRESSION':
+        out_nodes = handle_expression_node(exp, out_nodes, node, compiler_version)
         return out_nodes
     else:
         return out_nodes
@@ -807,7 +818,6 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
     return back_track_results, tou_key_list
 
 
-
 def key_approx_analysis(contract_name, contract, state_vars, func_name, slither, functions_ast, cont_mappings, results, compiler_version):
     """
     Performs key approximation analysis on provided function using ASTs and CFGs.
@@ -935,8 +945,11 @@ def key_approx_analyzer(contract_name, source_code, compiler_version):
 
     slot_details = extract_slot_details(variables_slot_results)
 
-    print("\nThe slot layout of the provided smart contract is as follow:\n")
-    print_all(slot_details)
+    if len(slot_details) > 0:
+        print("\nThe slot layout of the provided smart contract is as follow:\n")
+        print_all(slot_details)
+    else:
+        print("\nNo state variable detected in the smart contract. \n")
 
     state_vars = {}
     for cont in all_contracts_dict:

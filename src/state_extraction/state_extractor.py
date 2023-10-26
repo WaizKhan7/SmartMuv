@@ -191,7 +191,9 @@ def generate_abi(source_code, cont_name):
 def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
 
     var_lst = []
-    for key in ord_slots.keys():
+    for ind, key in enumerate(ord_slots.keys()):
+        if not ind % 100:
+            print(f"Extracted {ind} out of {len(ord_slots)}")
         vars1 = ord_slots[key]
         val = w3.eth.get_storage_at(w3.to_checksum_address(cont_addr), key)
         bytes_used = 0
@@ -231,6 +233,7 @@ def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
             tmp.reverse()
             extracted_var = [vars1[0]['name'], vars1[0]['dataType'], b''.join(tmp), vars1[0]['bytes'], hex(key)]
             var_lst.append(extracted_var)
+    print("Completed!")
     return var_lst, slots_and_data
 
 # extracts data/values of user-defined variables
@@ -396,15 +399,14 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                 try:
                     slot_key = [w3.to_int(hexstr=key_val), key_val]
                     placeholder.append(slot_key)
-                except:
-                    print(slot_key)
+                except Exception as e:
+                    print(key_type, key_val, e)
             elif 'string' in key_type:
                 try:
-                    key_val = key_val.encode().hex()
-                    slot_key = [w3.to_int(hexstr=key_val), key_val]
+                    slot_key = [key_val, key_val]
                     placeholder.append(slot_key)
-                except:
-                    print(slot_key)
+                except Exception as e:
+                    print(key_type, key_val, e)
             elif 'bytes' in key_type:
                 try:
                     key_val = w3.to_hex(key_val)
@@ -415,8 +417,7 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                         slot_key = [w3.to_int(hexstr=key_val), key_val]
                         placeholder.append(slot_key)
                     except Exception as e:
-                        print(key_val, e)
-                    
+                        print(key_type, key_val, e)
             elif 'uint' in key_type:
                 slot_key = [int(key_val), key_val]
                 placeholder.append(slot_key)
@@ -429,7 +430,18 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
         for key_vals in placeholder:
             #slot contain slot no of mapping, then slot against key (vr[0]) is calculated 
             # in case of 2d mapping process will twice
-            f = w3.solidity_keccak(['uint256', 'uint256'], [key_vals[0], slot])
+            if key_type == "string":
+                try:
+                    f = w3.solidity_keccak(['string', 'uint256'], [key_val, slot])
+                except Exception as e:
+                    print(e)
+                    continue
+            else:
+                try:
+                    f = w3.solidity_keccak(['uint256', 'uint256'], [key_vals[0], slot])
+                except Exception as e:
+                    print(e)
+                    continue
             slot = w3.to_int(f)
             keyss.append(key_vals[1])
         if [slot] + keyss not in map_slots:
