@@ -190,10 +190,11 @@ def generate_abi(source_code, cont_name):
 # extracts data/values of regular/elementary variables
 def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
 
+    total_vars = len(ord_slots)
     var_lst = []
     for ind, key in enumerate(ord_slots.keys()):
-        if not ind % 100:
-            print(f"Extracted {ind} out of {len(ord_slots)}")
+        if not ind % 100 and total_vars > 100:
+            print(f"Extracted {ind} out of {total_vars}")
         vars1 = ord_slots[key]
         val = w3.eth.get_storage_at(w3.to_checksum_address(cont_addr), key)
         bytes_used = 0
@@ -233,7 +234,8 @@ def extract_elementry_variables(ord_slots, cont_addr, slots_and_data, w3):
             tmp.reverse()
             extracted_var = [vars1[0]['name'], vars1[0]['dataType'], b''.join(tmp), vars1[0]['bytes'], hex(key)]
             var_lst.append(extracted_var)
-    print("Completed!")
+    if total_vars > 100:
+        print("Completed!")
     return var_lst, slots_and_data
 
 # extracts data/values of user-defined variables
