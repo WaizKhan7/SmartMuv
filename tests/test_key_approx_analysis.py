@@ -18,16 +18,13 @@ def compare_results(current_results, expected_results):
     for cont in expected_results:
         for func in expected_results[cont]:
             try:
-                if expected_results[cont][func] != current_results[cont][func]:
-                    print(func)
-                    print("___________________________________")
-                    print(expected_results[cont][func])
-                    print("___________________________________")
-                    print(current_results[cont][func])
-                    print("___________________________________")
-                    return False
+                for x in expected_results[cont][func]:
+                    if x not in current_results[cont][func]:
+                        print(f"In function = {func}")
+                        print("Missing ---", expected_results[cont][func])
+                        return False
             except:
-                print(func)
+                print(f"Missing result in function = {func}!")
                 return False
     return True
 

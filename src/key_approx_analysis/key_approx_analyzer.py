@@ -19,14 +19,6 @@ def print_all(data_list):
         print(data)
     return
 
-def generate_abi(source_code, cont_name):
-    compiled_contracts = compile_source(source_code)
-    for contract in compiled_contracts:
-        curr_cont_name = contract.split(":")[1]
-        if cont_name == curr_cont_name:
-            cont_abi = compiled_contracts[contract]['abi']
-            break
-    return cont_abi
 
 # switch Solidity compiler to required version
 def switch_compiler(compiler_version):
@@ -156,6 +148,50 @@ def get_vars(expr):
         return_vars.append(vars_split[0].strip())
     return return_vars
 
+def find_diamond_for_class(tree, class_name):
+    # A recursive function to get all base classes for a given class
+    def all_bases(cls, accum=None):
+        if accum is None:
+            accum = {}
+        bases = tree.get(cls, [])
+        for base in bases:
+            accum[base] = accum.get(base, 0) + 1
+            all_bases(base, accum)
+        return accum
+
+    # Find if the specified class has any base classes included multiple times
+    bases = all_bases(class_name)
+    diamond_bases = {base: count for base, count in bases.items() if count > 1}
+    return diamond_bases
+
+
+def merge(sequences):
+    """
+    Merges multiple sequences into a single C3 linearization, as per the C3 algorithm.
+    """
+    result = []
+    while True:
+        non_empty_seqs = [seq for seq in sequences if seq]
+        if not non_empty_seqs:
+            return result
+        for seq in non_empty_seqs:  # find merge candidates among seq heads
+            candidate = seq[0]
+            if not any(candidate in s[1:] for s in non_empty_seqs):
+                break
+        else:
+            raise Exception("Inconsistent hierarchy")
+        result.append(candidate)
+        for seq in non_empty_seqs:  # remove candidate
+            if seq[0] == candidate:
+                del seq[0]
+
+def c3_linearization(classname, tree):
+    """
+    Calculates the C3 linearization for a given class.
+    """
+    base_classes = tree.get(classname, [])
+    sequences = [c3_linearization(base_class, tree) for base_class in base_classes] + [base_classes + [classname]]
+    return merge(sequences)
 
 def unroll_struct(struct, all_contract_dict):
     """Takes in a struct data type, returns list of variables in the struct"""
@@ -163,7 +199,6 @@ def unroll_struct(struct, all_contract_dict):
     for var_struct in struct['members']:
         var_lst.append(format_variable(var_struct, all_contract_dict))
     return var_lst
-
 
 def format_variable(var_struct, all_contracts_dict):
     """Takes in a variable struct, returns the formatted variable according to it's type"""
@@ -210,14 +245,20 @@ def format_variable(var_struct, all_contracts_dict):
         try:
             lens.append(var_struct['typeName']['length']['number'])
         except:
-            lens.append(var_struct['typeName']['length'])
+            try:
+                lens.append(var_struct['typeName']['length']['name'])
+            except:
+                lens.append(var_struct['typeName']['length'])
         # iterate over all dimensions of array to get length of each dimension
         while not ('name' in name_struct or 'namePath' in name_struct):
             if 'length' in name_struct:
                 try:
                     lens.append(name_struct['length']['number'])
                 except:
-                    lens.append(name_struct['length'])
+                    try:
+                        lens.append(name_struct['length']['name'])
+                    except:
+                        lens.append(name_struct['length'])
             name_struct = name_struct['baseTypeName']
         new_lens = []
         for i in range(1, len(lens)+1):
@@ -241,7 +282,7 @@ def format_variable(var_struct, all_contracts_dict):
             var_dict['dimension'] = 'multi'
         else:
             var_dict['dimension'] = 'single'
-        if not(None in lens):
+        if None not in lens:
             var_dict['StorageType'] = 'static'
         else:
             var_dict['StorageType'] = 'dynamic'
@@ -266,7 +307,9 @@ def variable_unrolling(subnodes, all_contracts_dict, all_vars):
                     except:
                         pass
                     continue
-                statevars.append(format_variable(variable, all_contracts_dict))
+                st_var = statevars.append(format_variable(variable, all_contracts_dict))
+                if st_var != None:
+                    statevars.append(st_var)
         elif node['type'] == 'StructDefinition':
             tmp = unroll_struct(node, all_contracts_dict)
             all_contracts_dict[node['name']] = {'vars': tmp}
@@ -276,11 +319,10 @@ def variable_unrolling(subnodes, all_contracts_dict, all_vars):
             var_dict['dataType'] = 'enum'
             var_dict['name'] = node['name']
             all_contracts_dict[node['name']] = {'vars': [var_dict]}
-
     return statevars, all_contracts_dict, all_vars
 
 
-def get_contract_details(children):
+def get_contract_details(children, contract_name):
     """
     Takes AST of the source code, and returns details of all defined contracts, structs and enums.
 
@@ -293,6 +335,37 @@ def get_contract_details(children):
     """
     all_vars = []
     all_contracts_dict = {}
+    inherit_tree = {}
+    linearized_inherit_tree = {}
+    for contract in children:
+        if contract == None:
+            continue
+        try:
+            sub_nodes = contract['subNodes']
+        except:
+            sub_nodes = []
+        if contract['type'] == 'PragmaDirective':
+            continue
+        if 'baseContracts' in contract:
+            if contract['baseContracts'] != []:
+                lst = contract['baseContracts']
+                parent_list = []
+                for basecontract in lst:
+                    parent_list.append(basecontract['baseName']['namePath'])
+                inherit_tree[contract['name']] = parent_list
+                
+    diamonds = find_diamond_for_class(inherit_tree, contract_name)
+    if diamonds:
+        print("************************************")
+        print(f"Diamond inheritance detected for class {contract_name}: {diamonds}")
+        print("************************************")
+    else:
+        print(f"No diamond inheritance detected for class {contract_name}.")
+    for cont in inherit_tree:
+        temp = c3_linearization(cont, inherit_tree)
+        linearized_inherit_tree[cont] = temp[:-1]
+    # print(linearized_inherit_tree)
+
     for contract in children:
         parent = []
         if contract == None:
@@ -305,29 +378,26 @@ def get_contract_details(children):
             continue
         state_vars, all_contracts_dict, all_vars = variable_unrolling(
             sub_nodes, all_contracts_dict, all_vars)
-        if 'baseContracts' not in contract:
-            continue
-        if contract['baseContracts'] != []:
-            lst = contract['baseContracts']
-            tmpls = []
-            for basecontract in lst:
-                tmp = basecontract['baseName']['namePath']
-                if len(all_contracts_dict) != 0:
-                    b_statevars = all_contracts_dict[tmp]['vars']
-                    for var in b_statevars:
-                        if type(var) == list:
-                            for va in var:
-                                if not(va in tmpls):
-                                    tmpls.append(va)
-                        else:
-                            if not var in tmpls:
-                                tmpls.append(var)
-            state_vars = tmpls + state_vars
-            parent = contract['baseContracts']
+        if 'baseContracts' in contract:
+            if contract['baseContracts'] != []:
+                    lst = linearized_inherit_tree[contract['name']]
+                    parent_vars = []
+                    for parent_cont_name in lst:
+                        if len(all_contracts_dict) != 0:
+                            b_statevars = all_contracts_dict[parent_cont_name]['vars']
+                            for var in b_statevars:
+                                if type(var) == list:
+                                    for va in var:
+                                        if va not in parent_vars:
+                                            parent_vars.append(va)
+                                else:
+                                    if var not in parent_vars:
+                                        parent_vars.append(var)
+                    state_vars = parent_vars + state_vars
+                    parent = lst
         all_contracts_dict[contract['name']] = {
             'vars': state_vars, 'parent': parent, 'type': contract['type']}
-    return all_vars, all_contracts_dict
-
+    return all_vars, all_contracts_dict, diamonds
 
 def format_variable_new(var_struct, all_contracts_dict):
     """Takes in a variable struct, returns the formatted variable according to it's type"""
@@ -368,16 +438,22 @@ def format_variable_new(var_struct, all_contracts_dict):
     elif var_struct['typeName']['nodeType'] == 'ArrayTypeName':
         name_struct = var_struct['typeName']['baseType']
         lens = []
-        if 'length' in var_struct['typeName']:
-            lens.append(var_struct['typeName']['length']['value'])
-        else:
-            lens.append(None)
+        try:
+            if var_struct['typeName']['length']['nodeType'] == 'Literal':
+                lens.append(var_struct['typeName']['length']['value'])
+            else:
+                lens.append(var_struct['typeName']['length']['name'])
+        except:
+            lens.append(var_struct['typeName']['length'])
         # iterate over all dimensions of array to get length of each dimension
         while not ('name' in name_struct or 'namePath' in name_struct):
-            if 'length' in name_struct:
-                lens.append(name_struct['length']['value'])
-            else:
-                lens.append(None)
+            try:
+                if name_struct['length']['nodeType'] == 'Literal':
+                    lens.append(name_struct['length']['value'])
+                else:
+                    lens.append(name_struct['length']['name'])
+            except:
+                lens.append(name_struct['length'])
             name_struct = name_struct['baseType']
         type_struct = name_struct['nodeType']
         
@@ -396,7 +472,7 @@ def format_variable_new(var_struct, all_contracts_dict):
             var_dict['dimension'] = 'multi'
         else:
             var_dict['dimension'] = 'single'
-        if not (None in lens):
+        if None not in lens:
             var_dict['StorageType'] = 'static'
         else:
             var_dict['StorageType'] = 'dynamic'
@@ -414,31 +490,35 @@ def variable_unrolling_new(subnodes, all_contracts_dict, all_vars):
     statevars = []
     for node in subnodes:
         if node['nodeType'] == "VariableDeclaration":
-            if node['stateVariable'] == True:
-                try:
-                    if node['constant'] == True or node['mutability'] == "immutable":
-                        # grab the value if the value is assigned to a variable at compile time
-                        try:
-                            if 'number' in node['value']['kind'] or 'string' in node['value']['kind']:
-                                all_vars.append(
-                                    [node['name'], node['typeDescriptions']['typeString'], node['value']['value']])
-                                continue
-                        except:
+          if node['stateVariable'] == True:
+            try:
+                if node['constant'] == True or node['mutability'] == "immutable":
+                    # grab the value if the value is assigned to a variable at compile time
+                    try:
+                        if 'number' in node['value']['kind'] or 'string' in node['value']['kind']:
+                            all_vars.append(
+                                [node['name'], node['typeDescriptions']['typeString'], node['value']['value']])
                             continue
-                    else:
-                        statevars.append(format_variable_new(node, all_contracts_dict))            
-                except:
-                    if node['constant'] == True:
-                        # grab the value if the value is assigned to a variable at compile time
-                        try:
-                            if 'number' in node['value']['kind'] or 'string' in node['value']['kind']:
-                                all_vars.append(
-                                    [node['name'], node['typeDescriptions']['typeString'], node['value']['value']])
-                                continue
-                        except:
+                    except:
+                        continue
+                else:
+                    st_var = format_variable_new(node, all_contracts_dict)
+                    if st_var != None:
+                        statevars.append(st_var)
+            except:
+                if node['constant'] == True:
+                    # grab the value if the value is assigned to a variable at compile time
+                    try:
+                        if 'number' in node['value']['kind'] or 'string' in node['value']['kind']:
+                            all_vars.append(
+                                [node['name'], node['typeDescriptions']['typeString'], node['value']['value']])
                             continue
-                    else:
-                        statevars.append(format_variable_new(node, all_contracts_dict))
+                    except:
+                        continue
+                else:
+                    st_var = format_variable_new(node, all_contracts_dict)
+                    if st_var != None:
+                        statevars.append(st_var)
         elif node['nodeType'] == 'StructDefinition':
             tmp = unroll_struct_new(node, all_contracts_dict)
             all_contracts_dict[node['name']] = {'vars': tmp, 'type': node['nodeType']}
@@ -448,10 +528,10 @@ def variable_unrolling_new(subnodes, all_contracts_dict, all_vars):
             var_dict['dataType'] = 'enum'
             var_dict['name'] = node['name']
             all_contracts_dict[node['name']] = {'vars': [var_dict]}
-            
+
     return statevars, all_contracts_dict, all_vars
 
-def get_contract_details_new(contracts):
+def get_contract_details_new(contracts, contract_name):
     """
     Takes AST of the source code, and returns details of all defined contracts, structs and enums.
 
@@ -464,6 +544,35 @@ def get_contract_details_new(contracts):
     """
     all_vars = []
     all_contracts_dict = {}
+    inherit_tree = {}
+    linearized_inherit_tree = {}
+    for contract in contracts:
+        if contract == None:
+            continue
+        if contract['nodeType'] == 'PragmaDirective':
+            continue
+        if 'baseContracts' not in contract:
+            continue
+        if contract['baseContracts'] != []:
+            lst = contract['baseContracts']
+            parent_list = []
+            for basecontract in lst:
+                parent_list.append(basecontract['baseName']['name'])
+            inherit_tree[contract['name']] = parent_list
+    # print(inherit_tree)
+    diamonds = find_diamond_for_class(inherit_tree, contract_name)
+    if diamonds:
+        print("************************************")
+        print(f"Diamond inheritance detected for class {contract_name}: {diamonds}")
+        print("************************************")
+    else:
+        print(f"No diamond inheritance detected for class {contract_name}.")
+
+    for cont in inherit_tree:
+        temp = c3_linearization(cont, inherit_tree)
+        linearized_inherit_tree[cont] = temp[:-1]
+    # print(linearized_inherit_tree)
+
     for contract in contracts:
         parent = []
         if contract == None:
@@ -477,27 +586,27 @@ def get_contract_details_new(contracts):
         state_vars, all_contracts_dict, all_vars = variable_unrolling_new(
             sub_nodes, all_contracts_dict, all_vars)
         # parent contract
-        if contract['baseContracts'] != []:
-            lst = contract['baseContracts']
-            parent_vars = []
-            for basecontract in lst:
-                parent_cont_name = basecontract['baseName']['name']
-                if len(all_contracts_dict) != 0:
-                    b_statevars = all_contracts_dict[parent_cont_name]['vars']
-                    for var in b_statevars:
-                        if type(var) == list:
-                            for va in var:
-                                if not(va in parent_vars):
-                                    parent_vars.append(va)
-                        else:
-                            if not var in parent_vars:
-                                parent_vars.append(var)
-            state_vars = parent_vars + state_vars
-            parent = contract['baseContracts']
+        if 'baseContracts' in contract:
+            if contract['baseContracts'] != []:
+                # if contract['name'] == contract_name:
+                    lst = linearized_inherit_tree[contract['name']]
+                    parent_vars = []
+                    for parent_cont_name in lst:
+                        if len(all_contracts_dict) != 0:
+                            b_statevars = all_contracts_dict[parent_cont_name]['vars']
+                            for var in b_statevars:
+                                if type(var) == list:
+                                    for va in var:
+                                        if va not in parent_vars:
+                                            parent_vars.append(va)
+                                else:
+                                    if var not in parent_vars:
+                                        parent_vars.append(var)
+                    state_vars = parent_vars + state_vars
+                    parent = lst
         all_contracts_dict[contract['name']] = {
             'vars': state_vars, 'parent': parent, 'type': contract['nodeType']}
-    return all_vars, all_contracts_dict
-
+    return all_vars, all_contracts_dict, diamonds
 
 def handle_expression_node(exp, out_nodes, node, compiler_version):
     var = exp.split(' = ')[0]  # get left hand operand
@@ -574,6 +683,8 @@ def handle_func_nodes(in_nodes, node, compiler_version):
 def generate_final_key_approx_results(results):
     final_results = {}
     for rslt in results:
+        if len(rslt) < 5:
+            continue
         cont_name = rslt[0]
         if cont_name in final_results:
             func_name = rslt[2]
@@ -750,7 +861,12 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
                                 def_found = True
                             elif deff[0] == new_var and def_found == True:
                                 map_keys_details[key_idx].append([new_var, deff[1], 'regular'])
-                        key_source_id = temp_id
+                        if def_found == False:
+                            map_keys_details[key_idx].append([map_key[0], 'tou', 'unknown_identifier'])
+                            new_details_added = True
+                            break
+                        else:
+                            key_source_id = temp_id
                     elif 'literal' in right_type:
                         key_val = str(right.value)
                         break
@@ -773,7 +889,12 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
                                 def_found = True
                             elif deff[0] == new_var and def_found == True:
                                 map_keys_details[key_idx].append([new_var, deff[1], 'regular'])
-                        key_source_id = temp_id
+                        if def_found:
+                            key_source_id = temp_id
+                        else:
+                            map_keys_details[key_idx].append([map_key[0], 'tou', 'unknown_identifier'])
+                            new_details_added = True
+                            break
                     else:
                         new_details_added = True
                         map_keys_details[key_idx].append([map_key[0], 'tou', 'others'])
@@ -814,7 +935,8 @@ def back_track(current_contract, func_name, marked_nodes, in_nodes, slither):
             for key_reslt in list(comb):
                 comp_reslt += key_reslt
             if comp_reslt != []:
-                back_track_results.append([func_name] + comp_reslt)    
+                if [func_name] + comp_reslt not in back_track_results:
+                    back_track_results.append([func_name] + comp_reslt)    
     return back_track_results, tou_key_list
 
 
@@ -931,15 +1053,15 @@ def key_approx_analyzer(contract_name, source_code, compiler_version):
             all_tou_keys += tou_keys
 
     try:
-        compiled_sol = compile_source(source_code)
-        cont_ast = compiled_sol['<stdin>:'+contract_name]['ast']['nodes']
-        all_vars, all_contracts_dict = get_contract_details_new(cont_ast)
-    except Exception as e:
-        print("Warning - in get_contract_details_new ---", e)
         children, compiler_version = generate_ast(source_code)
         children.pop(0)
-        all_vars, all_contracts_dict = get_contract_details(children)
-
+        all_vars, all_contracts_dict, diamonds = get_contract_details(children, contract_name)
+    except Exception as e:
+        print("Error occured in get_contract_details -", str(e))
+        compiled_sol = compile_source(source_code)
+        cont_ast = compiled_sol['<stdin>:'+contract_name]['ast']['nodes']
+        all_vars, all_contracts_dict, diamonds = get_contract_details_new(cont_ast, contract_name)
+        
     _, variables_slot_results = calculate_slots(
         all_contracts_dict[contract_name]['vars'], -1, all_contracts_dict)
 
@@ -986,14 +1108,14 @@ def get_slot_details(contract_name, source_code, compiler_version):
         switch_compiler(compiler_version)
         
     try:
-        compiled_sol = compile_source(source_code)
-        cont_ast = compiled_sol['<stdin>:'+contract_name]['ast']['nodes']
-        _, all_contracts_dict = get_contract_details_new(cont_ast)
-    except Exception as e:
-        print("Warning - in get_contract_details_new ---", str(e))
         children, compiler_version = generate_ast(source_code)
         children.pop(0)
-        _, all_contracts_dict = get_contract_details(children)
+        _, all_contracts_dict, diamonds = get_contract_details(children, contract_name)
+    except Exception as e:
+        print("Error occured in get_contract_details -", str(e))
+        compiled_sol = compile_source(source_code)
+        cont_ast = compiled_sol['<stdin>:'+contract_name]['ast']['nodes']
+        _, all_contracts_dict, diamonds = get_contract_details_new(cont_ast, contract_name)
 
     _, variables_slot_results = calculate_slots(
         all_contracts_dict[contract_name]['vars'], -1, all_contracts_dict)

@@ -150,7 +150,7 @@ def hex_to_declared_type(var_value, var_type , w3):
             #var_value = w3.to_int(var_value)
             var_value = int(var_value, 0)
         except:
-            raiseExceptions
+            print("Warning: Failed to get int type!")
     if 'bytes' in var_type:
         try:
             var_value = w3.to_hex(var_value)
@@ -181,7 +181,10 @@ def transform_result(results):
 def generate_abi(source_code, cont_name):
     compiled_contracts = compile_source(source_code)
     for contract in compiled_contracts:
-        curr_cont_name = contract.split(":")[1]
+        if ":" in contract:
+            curr_cont_name = contract.split(":")[1]
+        else:
+            curr_cont_name = contract
         if cont_name == curr_cont_name:
             cont_abi = compiled_contracts[contract]['abi']
             break
@@ -359,13 +362,16 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                                 key_arg_pos = int(curr_key[4])
                                 for arg in func_inputs.keys():
                                     # finding arg name at required "key_arg_pos" to extract its value
-                                    if arg == transaction_abi[int(key_arg_pos)]['name']:
-                                        if lev in dim:
-                                            dim[lev].append(
-                                            [func_inputs[arg], transaction_abi[key_arg_pos]['type']])
-                                        else:
-                                            dim[lev] = [[func_inputs[arg], transaction_abi[key_arg_pos]['type']]]
-                                        break
+                                    try:
+                                        if arg == transaction_abi[int(key_arg_pos)]['name']:
+                                            if lev in dim:
+                                                dim[lev].append(
+                                                [func_inputs[arg], transaction_abi[key_arg_pos]['type']])
+                                            else:
+                                                dim[lev] = [[func_inputs[arg], transaction_abi[key_arg_pos]['type']]]
+                                            break
+                                    except:
+                                        pass
                 # if keys for all dimensions are extracted successfully
                 if len(dim) == len(dim_keys):
                     diff_lens = False
@@ -608,14 +614,14 @@ def extract_regular_variables(cont_name, source_code, cont_addr, compiler_versio
     else:
         children, compiler_version = generate_ast(source_code)
         switch_compiler(compiler_version)
-    children.pop(0)
+    children.pop(0)    
     try:
+        all_vars, all_contracts_dict, diamonds = get_contract_details(children, cont_name)
+    except Exception as e:
+        print(f"Error occured in get_contract_details - {e}")
         compiled_sol = compile_source(source_code)
         cont_ast = compiled_sol['<stdin>:'+cont_name]['ast']['nodes']
-        all_vars, all_contracts_dict = get_contract_details_new(cont_ast)
-    except Exception as e:
-        print("Warning - in get_contract_details_new ---", e)
-        all_vars, all_contracts_dict = get_contract_details(children)
+        all_vars, all_contracts_dict, diamonds = get_contract_details_new(cont_ast, cont_name)
 
     _, variables_slot_results = calculate_slots(
         all_contracts_dict[cont_name]['vars'], -1, all_contracts_dict)
