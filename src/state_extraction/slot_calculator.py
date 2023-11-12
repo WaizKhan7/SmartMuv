@@ -103,8 +103,14 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
                     var_dict['type'] = varr['type']
                     # var_dict['name'] = var['name']+'.'+varr['name']
                     if varr['type'] != "Mapping":
-                        var_dict['bytes'] = varr['bytes']
-                        var_dict['dataType'] = varr['dataType']
+                        try:
+                            var_dict['bytes'] = varr['bytes']
+                        except:
+                            pass
+                        try:
+                            var_dict['dataType'] = varr['dataType']
+                        except:
+                            var_dict['dataType'] = varr['dataTypeType']
                     var_dict['slot'] = varr['slot']
                     vars_slot_details.append(var_dict)
             else: # if its a contract definition, then it just a pointer/address and will not need a new slot like struct
@@ -152,8 +158,22 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
             if current_var['StorageType'] == 'dynamic':
                 curr_slot_num += 1
                 current_var['slot'] = curr_slot_num
-                current_var['bytes'] = get_bytes(current_var['dataTypeName'])
-                current_var['dataType'] = current_var['dataTypeName']
+                try:
+                    current_var['bytes'] = get_bytes(current_var['dataTypeName'])
+                except:
+                    pass
+                if current_var['dataTypeType'] == 'UserDefinedTypeName':
+                    # if user defined is an enum
+                    if "." in current_var['dataTypeName']:
+                        current_var['dataTypeName'] = current_var['dataTypeName'].split(".")[-1]
+                    if all_contracts[current_var['dataTypeName']]['vars'] == []:
+                        # its a address
+                        current_var['dataType'] = 'address' 
+                    elif 'dataType' in all_contracts[current_var['dataTypeName']]['vars'][0]:
+                        if all_contracts[current_var['dataTypeName']]['vars'][0]['dataType'] == 'enum':
+                            current_var['dataType'] = 'enum'
+                    else:
+                        current_var['typeVars'] = all_contracts[current_var['dataTypeName']]['vars']
                 vars_slot_details.append(current_var)
             else: # if static array
                 current_var['curr'] += 1
@@ -186,9 +206,15 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
                             # if user defined is an enum
                             if "." in var_dict['dataType']:
                                 var_dict['dataType'] = var_dict['dataType'].split(".")[-1]
-                            if all_contracts[var_dict['dataType']]['vars'][0]['dataType'] == 'enum':
+                            if all_contracts[var_dict['dataType']]['vars'] == []:
+                                # its a address
                                 var_dict['type'] = 'ElementaryTypeName'
-                                var_dict['dataType'] = 'enum'
+                                var_dict['dataType'] = 'address'     
+                                var_dict['bytes'] = 20 # as size of address is 20 bytes
+                            elif 'dataType' in all_contracts[var_dict['dataType']]['vars'][0]:
+                                if all_contracts[var_dict['dataType']]['vars'][0]['dataType'] == 'enum':
+                                    var_dict['type'] = 'ElementaryTypeName'
+                                    var_dict['dataType'] = 'enum'
                             else:
                                 var_dict['typeVars'] = all_contracts[var_dict['dataType']]['vars']
                         tmp1.append(var_dict)
