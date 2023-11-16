@@ -490,6 +490,20 @@ def extract_mapping_data(cont_addr, var, all_contracts, contract_abi, all_vars, 
                     except Exception as e:
                         print("Warning: Could not extract -", var['name'], e)
                         continue
+            elif var_dict['type'] == 'ArrayTypeName':
+                try:
+                    if val['length'] == None:
+                        var_dict['StorageType'] = 'dynamic'
+                    else:
+                        var_dict['StorageType'] = 'static'
+                    var_dict['length'] = [val['length']]
+                    var_dict['dataTypeType'] = val['baseTypeName']['type']
+                    try:
+                        var_dict['dataTypeName'] = val['baseTypeName']['namePath']
+                    except:
+                        var_dict['dataTypeName'] = val['baseTypeName']['name']
+                except Exception as e:
+                    print(f"Warning: Could not extract - {var['name']} -", e)
                     
             keyss = ''
             for key in slot[1:]:

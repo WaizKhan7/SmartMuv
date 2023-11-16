@@ -395,8 +395,11 @@ def get_contract_details(children, contract_name):
                                         parent_vars.append(var)
                     state_vars = parent_vars + state_vars
                     parent = lst
-        all_contracts_dict[contract['name']] = {
-            'vars': state_vars, 'parent': parent, 'type': contract['type']}
+        try:
+            all_contracts_dict[contract['name']] = {
+                'vars': state_vars, 'parent': parent, 'type': contract['type']}
+        except:
+            continue
     return all_vars, all_contracts_dict, diamonds
 
 def format_variable_new(var_struct, all_contracts_dict):
@@ -444,7 +447,10 @@ def format_variable_new(var_struct, all_contracts_dict):
             else:
                 lens.append(var_struct['typeName']['length']['name'])
         except:
-            lens.append(var_struct['typeName']['length'])
+            try:
+                lens.append(var_struct['typeName']['length'])
+            except:
+                lens.append(None)
         # iterate over all dimensions of array to get length of each dimension
         while not ('name' in name_struct or 'namePath' in name_struct):
             try:
@@ -453,7 +459,10 @@ def format_variable_new(var_struct, all_contracts_dict):
                 else:
                     lens.append(name_struct['length']['name'])
             except:
-                lens.append(name_struct['length'])
+                try:
+                    lens.append(name_struct['length'])
+                except:
+                    lens.append(None)
             name_struct = name_struct['baseType']
         type_struct = name_struct['nodeType']
         
@@ -990,12 +999,30 @@ def extract_slot_details(variables_slot_results):
         if var_ast['type'] == 'Mapping':
             var = var_ast['type'].lower()+" "+var_ast['name']
             keys_type[var] = []
-            while 'valueType' in var_ast:
-                keys_type[var].append(var_ast['keyType']['name'])
-                var_ast = var_ast['valueType']
-            for key in var_ast:
-                if 'name' in key:
-                    value = var_ast[key]
+            mapping_ast = var_ast
+            val = var_ast['valueType']
+            while 'valueType' in mapping_ast:
+                try:
+                    keys_type[var].append(mapping_ast['keyType']['name'])
+                except:
+                    keys_type[var].append(mapping_ast['keyType']['namePath'])
+                mapping_ast = mapping_ast['valueType']
+            while 'keyType' in val:
+                val = val['valueType']    
+            if 'name' in val:
+              value = val['name']
+            elif 'namePath' in val:
+                value = val['namePath']
+            elif 'pathNode' in val:
+                value = val['pathNode']['name']
+            elif 'baseType' in val:
+                value = val['baseType']['name']
+            elif 'baseTypeName' in val:
+                try:
+                    value = val['baseTypeName']['namePath']
+                except:
+                    value = val['baseTypeName']['name']
+
             for key in keys_type[var]:
                 var+="["+key+"]"
             var_details = var+" = "+value+";"
