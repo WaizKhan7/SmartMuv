@@ -19,7 +19,6 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
     current_slot_vars = []
     vars_slot_details = []
     for current_var in var_list:
-        #print("current var (slot calc) ->", current_var)
         if current_var['type'] == 'ElementaryTypeName':
             current_var_bytes = get_bytes(current_var['dataType'])
             current_var['bytes'] = current_var_bytes
@@ -215,8 +214,8 @@ def calculate_slots(var_list, curr_slot_num, all_contracts):
                                 if all_contracts[var_dict['dataType']]['vars'][0]['dataType'] == 'enum':
                                     var_dict['type'] = 'ElementaryTypeName'
                                     var_dict['dataType'] = 'enum'
-                            else:
-                                var_dict['typeVars'] = all_contracts[var_dict['dataType']]['vars']
+                                else:
+                                    var_dict['typeVars'] = all_contracts[var_dict['dataType']]['vars']
                         tmp1.append(var_dict)
                     curr_slot_num, tmp_lst = calculate_slots(
                         tmp1, curr_slot_num, all_contracts)
