@@ -296,17 +296,30 @@ def variable_unrolling(subnodes, all_contracts_dict, all_vars):
             vars = node['variables']
             for variable in vars:
                 # grab the value if the value is assigned to a variable at compile time
-                if variable['isDeclaredConst'] == True or variable['isDeclaredImmutable'] == True:
-                    try:
-                        if 'value' in variable['expression']:
-                            all_vars.append(
-                                [variable['name'], variable['typeName']['name'], variable['expression']['value']])
-                        elif 'number' in variable['expression']:
-                            all_vars.append(
-                                [variable['name'], variable['typeName']['name'], variable['expression']['number']])
-                    except:
-                        pass
-                    continue
+                if 'isDeclaredConst' in variable:
+                    if variable['isDeclaredConst'] == True:
+                        try:
+                            if 'value' in variable['expression']:
+                                all_vars.append(
+                                    [variable['name'], variable['typeName']['name'], variable['expression']['value']])
+                            elif 'number' in variable['expression']:
+                                all_vars.append(
+                                    [variable['name'], variable['typeName']['name'], variable['expression']['number']])
+                        except:
+                            pass
+                        continue
+                if 'isDeclaredImmutable' in variable:
+                    if variable['isDeclaredImmutable'] == True:
+                        try:
+                            if 'value' in variable['expression']:
+                                all_vars.append(
+                                    [variable['name'], variable['typeName']['name'], variable['expression']['value']])
+                            elif 'number' in variable['expression']:
+                                all_vars.append(
+                                    [variable['name'], variable['typeName']['name'], variable['expression']['number']])
+                        except:
+                            pass
+                        continue
                 st_var = statevars.append(format_variable(variable, all_contracts_dict))
                 if st_var != None:
                     statevars.append(st_var)
