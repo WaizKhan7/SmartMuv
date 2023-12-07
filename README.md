@@ -1,7 +1,8 @@
 # SmartMuv
-[SmartMuv](https://www.smartmuv.app) is a smart contract analysis and extraction tool written in Python 3. SmartMuv extracts the complete state of the smart contract and enables users to upgrade or migrate their smart contracts across any EVM-compatible blockchain. SmartMuv can also be used for smart contract state tracking or retrieving smart contract's state (i.e. holders list or entries list of any data type like mapping, arrays, etc.) until a specific block number.
+[SmartMuv](https://www.smartmuv.app) is a smart contract analysis and data extraction tool in Python 3. SmartMuv can extract the complete state/data of the smart contract and enables users to upgrade or migrate their smart contracts along with the data across any EVM-compatible blockchain. SmartMuv can also be used for smart contract state tracking or retrieving smart contract data (i.e. holders list or entries list of any data type like mapping, arrays, etc.) until a specific block number.
 
-As Solidity does not keep track of keys of mapping variables, SmartMuv uses static time source code analysis techniques to perform key approximation analysis on mapping variables. It analyzes the complete layout of a smart contract and can extract not only regular variables but also complex variables (i.e. mappings and multi-dimensional arrays) and user-defined variables.
+
+As Solidity does not keep track of the keys of mapping variables, SmartMuv uses static time source code analysis techniques to perform key approximation analysis on mapping variables. It analyzes the complete layout of a smart contract and can extract not only regular variables but also complex variables (i.e. mappings and multi-dimensional arrays) and user-defined variables.
 
 ## System Requirements
 
@@ -34,7 +35,7 @@ python3 install_compilers.py
 
 ## Configuration
 
-SmartMuv uses EVM-compatible Blockchain `RPC` URL for state extraction, and block explorer `APIs` i.e. EtherScan, PolygonScan, BscScan, etc., to get smart contract transactions. API keys and URLs for RPC and Block explorers need to be added to the `config.ini` file for the tool to work properly.
+SmartMuv uses EVM-compatible Blockchain `RPC` URL for state extraction, and block explorer `APIs` i.e. EtherScan, PolygonScan, BscScan, etc., to get smart contract transactions. API keys and URLs for RPC and Block explorers must be added to the `config.ini` file for the tool to work properly.
 
 ## Running Script
 
@@ -64,7 +65,18 @@ python3 -m smartmuv
 **Note:** Add the source code of your project to 'CONTRACT_DIRECTORY' path specified in `config.ini` file. The code file should contain all the code without any `import` statement.
 ## Sample Outputs
 
-#### Extracted State
+### Slot Layout
+
+```
+slot 0 - mapping balances[address] = uint256;
+slot 1 - mapping allowed[address][address] = uint256;
+slot 2 - uint256 totalSupply;
+slot 3 - string name;
+slot 4 - uint8 decimals;
+slot 5 - string symbol;
+```
+
+### Extracted State
 
 **[Name, Type, Value, Size (Bytes), Slot Number]**
 
@@ -85,17 +97,6 @@ python3 -m smartmuv
 ['balances:key:0x38BC418476D274900167f33e2098A86aB01b96Af', 'uint256', 1000000000, 32, '0x430d203e4eb0ef42503559f8c2f4410eef444da81d0b910d2c40ed75d9c2f34a']
 ```
 
-#### Slot Layout
-
-```
-slot 0 - mapping balances[address] = uint256;
-slot 1 - mapping allowed[address][address] = uint256;
-slot 2 - uint256 totalSupply;
-slot 3 - string name;
-slot 4 - uint8 decimals;
-slot 5 - string symbol;
-```
-
 ## Tests
 
 ```
@@ -109,9 +110,10 @@ python3 -m tests.test_state_extraction
 
 - **Slot Analysis of a smart contract**, to get a complete storage layout of a smart contract.
 - Smart contract **storage audit**.
-- Smart contract complete **state indexing for blockchain explorer platforms**.
-- **State extraction (snapshot)** of smart contracts.
-- **Redeployment/upgrade of smart contracts** along their existing state/data.
+- Smart contract complete **internal data indexing for blockchain explorer platforms**.
+- **State extraction (snapshot)** of smart contract data.
+- **Redeployment/upgrade of smart contracts** along with their existing data.
+
 - **Migration of smart contracts** along with contract data i.e. L1 to L2 or L2 to L2 migrations.
   
 
